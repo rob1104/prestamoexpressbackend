@@ -18,6 +18,21 @@ class ClienteController extends Controller
         return response()->json(Cliente::get());
     }
 
+    public function search(Request $request)
+    {
+        $search = $request->query('search');
+
+        if (!$search) {
+            return Cliente::all();
+        }
+
+        return Cliente::where('nombre', 'LIKE', "%{$search}%")
+            ->orWhere('id', 'LIKE', "{$search}%")
+            ->orderBy('nombre', 'asc')
+            ->limit(50)
+            ->get(['id', 'nombre', 'identificacion', 'clasificacion']);
+    }
+
     /**
      * Store a newly created resource in storage.
      */

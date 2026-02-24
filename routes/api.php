@@ -33,6 +33,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::patch('/{user}/toggle', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
     });
+    Route::get('clientes/search', [ClienteController::class, 'search'])->name('clientes.search');
     Route::apiResource('clientes', ClienteController::class);
     Route::get('/clientes/ines/{path}', [ClienteController::class, 'verIne'])->where('path', '.*');
 
