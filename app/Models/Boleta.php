@@ -14,7 +14,7 @@ class Boleta extends Model
         'categoria_id',
         'cotizacion_oro_id',
         'promocion_id',
-        'usuario_id',
+        'user_id',
         'no_bolsa',
         'tipo_prestamo',
         'meses',
@@ -68,7 +68,7 @@ class Boleta extends Model
         return $this->belongsTo(Promocion::class);
     }
 
-    public function usuario()
+    public function user()
     {
         return $this->belongsTo(User::class);
     }

@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\BoletaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CotizacionOroController;
+use App\Http\Controllers\MovimientoCajaController;
 use App\Http\Controllers\ParametrosController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -44,5 +46,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/parametros', [ParametrosController::class, 'store'])->name('config.parametros.store');
     });
 
+    Route::post('/boletas', [BoletaController::class, 'store'])->name('boletas.store');
+    Route::post('/movimientoscaja/{id}/registrar-efectivo', [MovimientoCajaController::class, 'registrarEfectivo'])->name('movimientoscaja.registrar-efectivo');
 });
 
