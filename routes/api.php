@@ -5,7 +5,9 @@ use App\Http\Controllers\BoletaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CotizacionOroController;
 use App\Http\Controllers\MovimientoCajaController;
+use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ParametrosController;
+use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -35,9 +37,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::patch('/{user}/toggle', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
     });
-    Route::get('clientes/search', [ClienteController::class, 'search'])->name('clientes.search');
+    Route::get('/clientes/search', [ClienteController::class, 'search'])->name('clientes.search');
     Route::apiResource('clientes', ClienteController::class);
     Route::get('/clientes/ines/{path}', [ClienteController::class, 'verIne'])->where('path', '.*');
+    Route::get('/clientes/{cliente}/stats', [ClienteController::class, 'resumenOperaciones']);
 
     Route::prefix('/config')->group(function () {
         Route::get('/cotizacionoro', [CotizacionOroController::class, 'index'])->name('config.cotizacionoro.index');
@@ -46,7 +49,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/parametros', [ParametrosController::class, 'store'])->name('config.parametros.store');
     });
 
+    Route::get('/promociones', [PromocionController::class, 'index'])->name('promociones.index');
+
     Route::post('/boletas', [BoletaController::class, 'store'])->name('boletas.store');
+    Route::get('/boletas/{id}', [BoletaController::class, 'show'])->name('boletas.show');
+
+    Route::post('/boletas/pagos/refrendo', [PagoController::class, 'registrarRefrendo'])->name('boletas.refrendo');
+
     Route::post('/movimientoscaja/{id}/registrar-efectivo', [MovimientoCajaController::class, 'registrarEfectivo'])->name('movimientoscaja.registrar-efectivo');
 });
 

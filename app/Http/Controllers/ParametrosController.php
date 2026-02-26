@@ -69,7 +69,6 @@ class ParametrosController extends Controller
                 }
             }
 
-            // Si todo salió bien, confirmamos los cambios permanentemente
             DB::commit();
 
             return response()->json([

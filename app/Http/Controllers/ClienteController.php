@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ClienteRequest;
+use App\Models\Boleta;
 use App\Models\Cliente;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -128,5 +130,52 @@ class ClienteController extends Controller
 
         // 2. Entregar el archivo directamente al navegador sin URL pública
         return Storage::disk('local')->response($path);
+    }
+
+    public function resumenOperaciones(Cliente $cliente)
+    {
+        $hoy = Carbon::now();
+
+        // 1. Obtener todas las boletas del cliente (solo las necesarias para el resumen)
+        $boletas = Boleta::where('cliente_id', $cliente->id)
+            ->where('tipo_prestamo', 'tradicional')
+            ->get();
+
+        // 2. Cálculos para la pestaña "TRADICIONAL"
+
+        // Liquidaciones/Terminados (Estado 'liquidada' o 'cerrada')
+        $terminados = $boletas->whereIn('estatus', ['LI']);
+
+        // Préstamos en Proceso (Estado 'activa')
+        $enProceso = $boletas->where('estatus', 'PE');
+
+        // Desglose de proceso: Vigentes vs Vencidos
+        $vigentes = $enProceso->where('fecha_vencimiento', '>=', $hoy->toDateString());
+        $vencidos = $enProceso->where('fecha_vencimiento', '<', $hoy->toDateString());
+
+        // 3. Estructura de respuesta
+        return response()->json([
+            // Datos para la pestaña Tradicional
+            'terminados_count' => $terminados->count(),
+            'terminados_sum'   => $terminados->sum('prestamo'),
+
+            'liquidaciones_count' => $terminados->count(),
+            'liquidaciones_sum'   => $terminados->sum('prestamo'),
+
+            'proceso_count' => $enProceso->count(),
+            'proceso_sum'   => $enProceso->sum('prestamo'),
+
+            'vigentes_count' => $vigentes->count(),
+            'vigentes_sum'   => $vigentes->sum('prestamo'),
+
+            'vencidos_count' => $vencidos->count(),
+            'vencidos_sum'   => $vencidos->sum('prestamo'),
+
+            // Datos para la pestaña Refrendos (Simulado o desde tabla de pagos)
+            'refrendos_count' => 0,
+            'refrendos_sum'   => 0.00,
+
+
+        ]);
     }
 }

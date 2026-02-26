@@ -6,21 +6,22 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Promocion extends Model
+class NotaCredito extends Model
 {
     use LogsActivity;
 
     protected $fillable = [
-        'nombre',
-        'descripcion',
-        'dias_regalo',
-        'descuento_interes',
-        'cambio_comision',
-        'activa'
-    ];
-
-    protected $casts = [
-        'activa' => 'boolean'
+        'boleta_id',
+        'tipo_prestamo',
+        'cantidad',
+        'cantidad_sugerida',
+        'estatus',
+        'motivo_cancelacion',
+        'fecha_cancelacion',
+        'caja_id',
+        'user_id',
+        'user_autorizo_id',
+        'user_cancelo_id'
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -28,6 +29,6 @@ class Promocion extends Model
         return LogOptions::defaults()
             ->logFillable()
             ->logOnlyDirty()
-            ->useLogName('Promociones');
+            ->useLogName('Nota Credito');
     }
 }
