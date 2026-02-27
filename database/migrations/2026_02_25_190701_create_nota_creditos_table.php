@@ -22,8 +22,8 @@ return new class extends Migration
             $table->datetime('fecha_cancelacion')->nullable();
             $table->foreignId('caja_id')->constrained('cajas');
             $table->foreignId('user_id')->constrained('users');
-            $table->foreignId('user_autorizo_id')->constrained('users');
-            $table->foreignId('user_cancelo_id')->constrained('users');
+            $table->foreignId('user_autorizo_id')->nullable()->constrained('users');
+            $table->foreignId('user_cancelo_id')->nullable()->constrained('users');
             $table->timestamps();
         });
     }

@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Boleta;
 use App\Models\BoletaTradicional;
+use App\Models\MovimientosCaja;
+use App\Models\NotaCredito;
+use App\Models\Pago;
 use App\Models\SucursalConfig;
 use Carbon\Carbon;
 use Exception;
@@ -25,8 +28,11 @@ class BoletaController extends Controller
             ], 404);
         }
 
+        $pagos = Pago::where('boleta_id', $boleta->id)->get();
+
         return response()->json([
-            'boleta' => $boleta
+            'boleta' => $boleta,
+            'pagos' => $pagos
         ]);
     }
 
@@ -165,10 +171,13 @@ class BoletaController extends Controller
                     'fecha_movimiento'  => now(),
                 ]);
 
+                $pagos = BoletaTradicional::where('boleta_id', $boleta->id)->get();
+
                 return response()->json([
                     'status'  => 'success',
                     'message' => 'Boleta generada con éxito',
-                    'boleta'  => $boleta->load('partidas','cliente', 'user')
+                    'boleta'  => $boleta->load('partidas','cliente', 'user'),
+                    'pagos' => $pagos
                 ], 201);
             });
 
@@ -178,5 +187,103 @@ class BoletaController extends Controller
                 'message' => 'Error al guardar: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function procesarLiquidacion(Request $request)
+    {
+        // 1. Validamos los datos (Agregamos bonificacion)
+        $request->validate([
+            'boleta_id'      => 'required|exists:boletas,id',
+            'importe_pago'   => 'required|numeric',
+            'recargos'       => 'required|numeric',
+            'dias_vencidos'  => 'required|integer',
+            'total_pagado'   => 'required|numeric',
+            'total_recibido' => 'required|numeric',
+            'bonificacion'   => 'nullable|numeric',
+            'denominaciones' => 'required|json'
+        ]);
+
+        return DB::transaction(function () use ($request) {
+
+            $boleta = Boleta::with('cliente')->findOrFail($request->boleta_id);
+
+            if (in_array($boleta->estatus, ['Liquidada', 'Desempeñada', 'Inactiva'])) {
+                throw new \Exception("Esta boleta ya fue liquidada anteriormente.");
+            }
+
+            $bonificacionNC = $request->input('bonificacion', 0);
+            $hoy = now();
+
+            MovimientosCaja::create([
+                'caja_id'      => $request->caja_id ?? 1,
+                'boleta_id'    => $boleta->id,
+                'user_id'      => auth()->id(),
+                'tipo'         => 'ENTRADA',
+                'monto'        => $request->total_pagado,
+                'denominacion' => $request->denominaciones,
+            ]);
+
+            // 2. Insertar el Pago de Liquidación (Desempeño)
+            $pagoId = DB::table('pagos')->insertGetId([
+                'boleta_id'         => $boleta->id,
+                'no_pago'           => $request->no_pago ?? '---',
+                'fecha'             => $hoy->format('Y-m-d'),
+                'tipo_movimiento'   => 1, // <-- 1 = Liquidación/Desempeño (Ajusta según tu catálogo VB6)
+                'prestamo'          => $boleta->prestamo,
+                'interestotal'      => $boleta->comision, // El interés cobrado
+                'recargosNormal'    => $request->recargos,
+                'dias_vencidos'     => $request->dias_vencidos,
+                'importe'           => $request->importe_pago,
+                'user_id'           => auth()->id(),
+                'totalPagado'       => $request->total_pagado,
+                'totalRecibido'     => $request->total_recibido,
+                'caja_id'           => $request->caja_id ?? 1,
+                'estatus'           => 'A',
+                'created_at'        => $hoy,
+                'updated_at'        => $hoy
+            ]);
+
+            // 3. Generar la Nota de Crédito (Si hubo descuento por pronto pago)
+            if ($bonificacionNC > 0) {
+                NotaCredito::create([
+                    'boleta_id'         => $boleta->id,
+                    'tipo_prestamo'     => 'tradicional',
+                    'cantidad'          => $bonificacionNC,
+                    'cantidad_sugerida' => $bonificacionNC,
+                    'estatus'           => 'aplicado',
+                    'caja_id'           => $request->caja_id ?? 1,
+                    'user_id'           => auth()->id(),
+                ]);
+            }
+
+            // 4. Actualizar el estatus de la Boleta a Liquidada
+            $boleta->update([
+                'estatus' => 'LI',
+            ]);
+
+            $trad = BoletaTradicional::where('boleta_id', $boleta->id)->latest()->first();
+            $trad->update(['estatus' => 'LI']);
+            // 5. Preparar datos para el Ticket
+            $ticket_data = [
+                'folio_contrato'  => $boleta->id,
+                'numero_refrendo' => $trad->refrendo,
+                'no_bolsa'        => $boleta->no_bolsa,
+                'prestamo'        => $boleta->prestamo,
+                'recargos'        => $request->recargos,
+                'bonificacion'    => $bonificacionNC,
+                'total_pagado'    => $request->total_pagado,
+                'recibido'        => $request->total_recibido,
+                'cambio'          => $request->total_recibido - $request->total_pagado,
+                'cliente' => [
+                    'id'     => $boleta->cliente_id ?? '000',
+                    'nombre' => $boleta->cliente->nombre ?? 'PÚBLICO GENERAL',
+                ]
+            ];
+
+            return response()->json([
+                'message'     => 'Liquidación procesada correctamente',
+                'ticket_data' => $ticket_data
+            ]);
+        });
     }
 }

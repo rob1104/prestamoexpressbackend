@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Boleta;
 use App\Models\BoletaTradicional;
+use App\Models\MovimientosCaja;
 use App\Models\NotaCredito;
 use App\Models\Pago;
 use Carbon\Carbon;
@@ -16,6 +18,15 @@ class PagoController extends Controller
         return DB::transaction(function () use ($request) {
             $boletaId = $request->boleta_id;
             $hoy = now();
+
+            MovimientosCaja::create([
+                'caja_id'      => $request->caja_id ?? 1,
+                'boleta_id'    => $boletaId,
+                'user_id'      => auth()->id(),
+                'tipo'         => 'ENTRADA',
+                'monto'        => $request->total_pagado,
+                'denominacion' => $request->denominaciones,
+            ]);
 
             // 1. Localizar el registro actual pendiente en boletas_tradicionales
             $tradicionalActual = BoletaTradicional::where('boleta_id', $boletaId)
@@ -63,10 +74,8 @@ class PagoController extends Controller
             ]);
 
             // 3. Actualizar el estatus del periodo actual a REFRENDADO ('RE')
-            BoletaTradicional::where('id', $tradicionalActual->id)
-                ->update([
-                    'estatus' => 'RE'
-                ]);
+            $tradicionalActual->update(['estatus' => 'RE']);
+
 
             // 4. GENERAR EL PRÓXIMO PERIODO (Refrendo + 1)
             // Obtenemos porcentajes de configuración para el nuevo desglose
@@ -89,7 +98,7 @@ class PagoController extends Controller
             // Calculamos nueva fecha de vencimiento (Fecha de hoy + periodo de la boleta)
             $nuevaFechaVenc = $hoy->copy()->addDays($tradicionalActual->dias_reales);
 
-            BoletaTradicional::create([
+            $trad = BoletaTradicional::create([
                 'boleta_id'         => $boletaId,
                 'refrendo'          => $tradicionalActual->refrendo + 1,
                 'fecha_vencimiento' => $nuevaFechaVenc->format('Y-m-d'),
@@ -101,9 +110,40 @@ class PagoController extends Controller
                 'custodia'          => $mCustodia,
                 'interesdividido'   => $mIntDiv,
                 'iva_interes'       => $mIva,
-                'estatus'           => 'PE', // Nace como nuevo pendiente
+                'estatus'           => 'PE',
                 'user_id'           => auth()->id(),
             ]);
+
+            $bol = Boleta::with('cliente')->where('id', $boletaId)->first();
+
+            $capital = $bol->prestamo;
+            $interes = $bol->comision;
+
+
+            $fecha1 = now()->addDays(15);
+            $fecha2 = now()->addDays(21);
+            $fecha3 = now()->addDays(30);
+            $meses = ['Jan'=>'ene', 'Feb'=>'feb', 'Mar'=>'mar', 'Apr'=>'abr', 'May'=>'may', 'Jun'=>'jun', 'Jul'=>'jul', 'Aug'=>'ago', 'Sep'=>'sep', 'Oct'=>'oct', 'Nov'=>'nov', 'Dec'=>'dic'];
+
+            $liquidacion1 = $capital + ($interes * 0.50);
+            $liquidacion2 = $capital + ($interes * 0.75);
+            $liquidacion3 = $capital + $interes;
+
+            $pago_facil = [
+                [
+                    'fecha' => $fecha1->format('d') . '-' . $meses[$fecha1->format('M')] . '-' . $fecha1->format('Y'),
+                    'monto' => $liquidacion1
+                ],
+                [
+                    'fecha' => $fecha2->format('d') . '-' . $meses[$fecha2->format('M')] . '-' . $fecha2->format('Y'),
+                    'monto' => $liquidacion2
+                ],
+                [
+                    'fecha' => $fecha3->format('d') . '-' . $meses[$fecha3->format('M')] . '-' . $fecha3->format('Y'),
+                    'monto' => $liquidacion3
+                ]
+            ];
+
 
             // 5. Retornar datos para el ticket
             return response()->json([
@@ -113,8 +153,13 @@ class PagoController extends Controller
                     'folio' => $boletaId,
                     'no_pago' => $tradicionalActual->refrendo,
                     'fecha_vencimiento' => $nuevaFechaVenc->format('d-M-Y'), // Formato visual SICAE
-                    'cliente' => $request->cliente_nombre,
-                    'total' => $request->total_pagado
+                    'cliente_id' => $bol->cliente->id,
+                    'cliente_nombre' => $bol->cliente->nombre,
+                    'total_pagado' => $liquidacion3,
+                    'dias' => $trad->dias_reales,
+                    'no_bolsa' => $bol->no_bolsa,
+                    'pago_facil' => $pago_facil,
+                    'bonificacion' => $bonificacionNC
                 ]
             ]);
         });
