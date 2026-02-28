@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
             $table->enum('tipo', ['ENTRADA', 'SALIDA']);
             $table->decimal('monto', 18, 2);
-            $table->json('denominacion')->nullable();
+            $table->text('denominacion')->nullable();
             $table->timestamps();
         });
     }
