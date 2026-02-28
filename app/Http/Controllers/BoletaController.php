@@ -183,11 +183,11 @@ class BoletaController extends Controller
                             'fecha_pago'        => null,
                             'importe_recibido'  => 0,
                             'cambio'            => 0,
-                            'user_id'           => null, // Se llenará con el ID del cajero que le cobre en el futuro
-                            'caja_id'           => null,
+                            'user_id'           => Auth::id(), // Se llenará con el ID del cajero que le cobre en el futuro
+                            'caja_id'           => 1,
 
                             // 'P' significa que la semana está PENDIENTE de cobro
-                            'estatus'           => 'P',
+                            'estatus'           => 'PE',
                             'created_at'        => now(),
                             'updated_at'        => now(),
                         ];

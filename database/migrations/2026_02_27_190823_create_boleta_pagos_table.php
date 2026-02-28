@@ -31,7 +31,7 @@ return new class extends Migration
             $table->decimal('cambio', 10, 2)->default(0);
 
             // Control de Estatus y Cancelaciones
-            $table->string('estatus', 1)->default('A')->comment('A=Activo, C=Cancelado');
+            $table->string('estatus', 2)->default('A')->comment('A=Activo, C=Cancelado');
             $table->foreignId('usuario_cancelacion_id')->nullable()->constrained('users');
             $table->string('motivo_cancelacion', 100)->nullable();
             $table->dateTime('fecha_cancelacion')->nullable();
