@@ -39,7 +39,7 @@ return new class extends Migration
             $table->unsignedBigInteger('boleta_nueva_id')->nullable();
             $table->foreign('boleta_nueva_id')->references('id')->on('boletas')->nullOnDelete();
 
-            $table->enum('estatus', ['aplicado', 'cancelado'])->default('activo');
+            $table->enum('estatus', ['aplicado', 'cancelado'])->default('aplicado');
             $table->string('motivo_cancelacion', 120)->nullable();
             $table->foreignId('usuario_id')->constrained('users')->restrictOnDelete();
             $table->foreignId('usuario_cancelacion_id')->nullable()->constrained('users')->nullOnDelete();
