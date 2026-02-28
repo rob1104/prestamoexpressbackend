@@ -37,7 +37,6 @@ return new class extends Migration
             $table->string('salida_cartera_de', 32);
             $table->string('salida_cartera_a', 32);
             $table->decimal('min_pago_facil', 15, 2)->default(0);
-            $table->decimal('p_com_cheques_fed', 15, 5)->default(0);
             $table->decimal('costo_reporte_extravio', 15, 2)->default(0);
 
             // Porcentajes e Impuestos
