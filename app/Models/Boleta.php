@@ -32,6 +32,7 @@ class Boleta extends Model
         'fecha_vencimiento',
         'estatus',
         'cotizacion_valor',
+        'numero_pagos',
     ];
 
     protected $casts = [
@@ -124,6 +125,11 @@ class Boleta extends Model
     public function esTradicional(): bool
     {
         return $this->tipo_prestamo === 'tradicional';
+    }
+
+    public function calendarioPagos()
+    {
+        return $this->hasMany(CalendarioPago::class, 'boleta_id')->orderBy('num_pago', 'asc');
     }
 
     public function getActivitylogOptions(): LogOptions

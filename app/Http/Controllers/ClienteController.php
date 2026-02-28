@@ -132,6 +132,19 @@ class ClienteController extends Controller
         return Storage::disk('local')->response($path);
     }
 
+    public function updateClasificacion(Request $request, $id)
+    {
+        $request->validate(['clasificacion' => 'required|string']);
+
+        $cliente = Cliente::findOrFail($id);
+        $cliente->clasificacion = $request->clasificacion;
+        $cliente->save();
+
+        return response()->json([
+            'message' => 'Clasificación actualizada correctamente'
+        ]);
+    }
+
     public function resumenOperaciones(Cliente $cliente)
     {
         $hoy = Carbon::now();
@@ -174,8 +187,6 @@ class ClienteController extends Controller
             // Datos para la pestaña Refrendos (Simulado o desde tabla de pagos)
             'refrendos_count' => 0,
             'refrendos_sum'   => 0.00,
-
-
         ]);
     }
 }

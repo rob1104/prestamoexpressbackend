@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Boleta;
+use App\Models\BoletaPago;
 use App\Models\BoletaTradicional;
+use App\Models\CalendarioPago;
 use App\Models\MovimientosCaja;
 use App\Models\NotaCredito;
 use App\Models\Pago;
@@ -92,6 +94,7 @@ class BoletaController extends Controller
                     'fecha_boleta'      => $request->fecha_boleta,
                     'fecha_vencimiento' => $fechaFormateada,
                     'estatus'           => 'PE',
+                    'numero_pagos' => $request->numero_pagos
                 ]);
 
                 $config = SucursalConfig::first();
@@ -119,21 +122,100 @@ class BoletaController extends Controller
 
                 $mAlmacenaje += $diferencia;
 
-                BoletaTradicional::create([
-                    'boleta_id'         => $boleta->id,
-                    'refrendo'          => 1,
-                    'fecha_vencimiento' => $fechaFormateada,
-                    'dias_reales'       => $request->plazo_dias,
-                    'capital'           => $prestamo,
-                    'interes'           => $interesTotalCobrado,
-                    'almacenaje'        => $mAlmacenaje,
-                    'administracion'    => $mAdmin,
-                    'custodia'          => $mCustodia,
-                    'interesdividido'   => $mIntDiv,
-                    'iva_interes'       => $mIva,
-                    'estatus'           => 'PE',
-                    'user_id'           => auth()->id(),
-                ]);
+                if ($request->tipo_prestamo === 'pagos' && $request->numero_pagos > 0) {
+
+                    $fechasPagos = [];
+                    // Parseamos la fecha inicial desde donde arranca la boleta
+                    $fechaCiclo = Carbon::parse($request->fecha_boleta);
+
+                    for ($i = 1; $i <= $request->numero_pagos; $i++) {
+
+                        // Sumar días según la frecuencia (Periodo)
+                        switch ($request->periodo_id) {
+                            case 1: // Semanal
+                                $fechaCiclo->addDays(7);
+                                break;
+                            case 2: // Catorcenal
+                                $fechaCiclo->addDays(14);
+                                break;
+                            case 3: // Quincenal
+                                $fechaCiclo->addDays(15);
+                                break;
+                            case 4: // Mensual
+                                $fechaCiclo->addMonths(1);
+                                break;
+                        }
+
+                        // Determinar si es un pago normal o el último (para ajustar centavos)
+                        $montoCuota = ($i == $request->numero_pagos) ? $request->ultimo_pago : $request->pago_fijo;
+
+                        $fechasPagos[] = [
+                            'boleta_id'         => $boleta->id,
+                            'num_pago'          => $i,
+                            'fecha_vencimiento' => $fechaCiclo->format('Y-m-d'),
+                            'monto'             => $montoCuota,
+                            'estatus'           => 'PE', // Pendiente
+                            'created_at'        => now(),
+                            'updated_at'        => now(),
+                        ];
+                    }
+
+                    // Insertamos todas las letras de pago de golpe en la base de datos
+                    CalendarioPago::insert($fechasPagos);
+
+                    $pagosAPreGenerar = [];
+
+                    foreach ($request->calendario as $fila) {
+                        // Separamos el "01/04" para obtener solo el "1"
+                        $numPago = explode('/', $fila['no_pago'])[0];
+
+                        $pagosAPreGenerar[] = [
+                            'boleta_id'         => $boleta->id,
+                            'num_pago'          => (int) $numPago,
+                            'fecha_vencimiento' => Carbon::parse($fila['fecha_vencimiento'])->format('Y-m-d'),
+
+                            // Llenamos el desglose exacto de la tabla de amortización
+                            'importe'           => $fila['capital'],
+                            'comision'          => $fila['comision'],
+                            'total'             => $fila['pago_requerido'],
+
+                            // Estos campos se quedan vacíos o en 0 porque aún no viene a la ventanilla
+                            'fecha_pago'        => null,
+                            'importe_recibido'  => 0,
+                            'cambio'            => 0,
+                            'user_id'           => null, // Se llenará con el ID del cajero que le cobre en el futuro
+                            'caja_id'           => null,
+
+                            // 'P' significa que la semana está PENDIENTE de cobro
+                            'estatus'           => 'P',
+                            'created_at'        => now(),
+                            'updated_at'        => now(),
+                        ];
+                    }
+
+                    // Insertamos todas las filas de golpe (Muy eficiente en rendimiento)
+                    BoletaPago::insert($pagosAPreGenerar);
+
+                }
+                else {
+                    BoletaTradicional::create([
+                        'boleta_id'         => $boleta->id,
+                        'refrendo'          => 1,
+                        'fecha_vencimiento' => $fechaFormateada,
+                        'dias_reales'       => $request->plazo_dias,
+                        'capital'           => $prestamo,
+                        'interes'           => $interesTotalCobrado,
+                        'almacenaje'        => $mAlmacenaje,
+                        'administracion'    => $mAdmin,
+                        'custodia'          => $mCustodia,
+                        'interesdividido'   => $mIntDiv,
+                        'iva_interes'       => $mIva,
+                        'estatus'           => 'PE',
+                        'user_id'           => auth()->id(),
+                    ]);
+                }
+
+
 
                 // B. Guardar el detalle de las prendas (Oro/Monedas)
                 foreach ($request->partidas as $item) {
@@ -171,13 +253,24 @@ class BoletaController extends Controller
                     'fecha_movimiento'  => now(),
                 ]);
 
-                $pagos = BoletaTradicional::where('boleta_id', $boleta->id)->get();
+                $pagos = null;
+                if ($boleta->tipo_prestamo === 'tradicional') {
+                    // Trae el historial de refrendos
+                    $pagos = BoletaTradicional::where('boleta_id', $boleta->id)->get();
+                }
+                elseif ($boleta->tipo_prestamo === 'pagos') {
+                    // Trae el calendario de las letras (semanas/quincenas) ordenado
+                    $pagos = CalendarioPago::where('boleta_id', $boleta->id)
+                        ->orderBy('num_pago', 'asc')
+                        ->get();
+                }
 
                 return response()->json([
                     'status'  => 'success',
                     'message' => 'Boleta generada con éxito',
                     'boleta'  => $boleta->load('partidas','cliente', 'user'),
-                    'pagos' => $pagos
+                    'pagos' => $pagos,
+                    'historial_pagos' => $pagos
                 ], 201);
             });
 

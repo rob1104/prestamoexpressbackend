@@ -41,6 +41,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('clientes', ClienteController::class);
     Route::get('/clientes/ines/{path}', [ClienteController::class, 'verIne'])->where('path', '.*');
     Route::get('/clientes/{cliente}/stats', [ClienteController::class, 'resumenOperaciones']);
+    Route::patch('/clientes/{id}/clasificacion', [ClienteController::class, 'updateClasificacion'])->name('clientes.updateClasificacion');
 
     Route::prefix('/config')->group(function () {
         Route::get('/cotizacionoro', [CotizacionOroController::class, 'index'])->name('config.cotizacionoro.index');
@@ -48,6 +49,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/parametros', [ParametrosController::class, 'index'])->name('config.parametros.index');
         Route::post('/parametros', [ParametrosController::class, 'store'])->name('config.parametros.store');
     });
+
+
 
     Route::get('/promociones', [PromocionController::class, 'index'])->name('promociones.index');
 
