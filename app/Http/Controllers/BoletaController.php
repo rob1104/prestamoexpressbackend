@@ -21,7 +21,7 @@ class BoletaController extends Controller
 
     public function show($id)
     {
-        $boleta = Boleta::with(['cliente', 'partidas', 'user'])->find($id);
+        $boleta = Boleta::with(['cliente', 'partidas', 'user', 'tradicional'])->find($id);
 
         if(!$boleta) {
             return response()->json([

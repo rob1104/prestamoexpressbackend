@@ -132,6 +132,12 @@ class Boleta extends Model
         return $this->hasMany(CalendarioPago::class, 'boleta_id')->orderBy('num_pago', 'asc');
     }
 
+    public function tradicional()
+    {
+        return $this->hasOne(BoletaTradicional::class);
+    }
+
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
