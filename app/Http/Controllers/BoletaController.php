@@ -46,36 +46,16 @@ class BoletaController extends Controller
             'categoria_id'      => 'required',
             'no_bolsa'          => 'required|integer',
             'fecha_boleta'      => 'required|date',
-            'fecha_vencimiento' => 'required|date',
+            'fecha_vencimiento' => 'required',
             'prestamo'          => 'required|numeric|min:1',
             'partidas'          => 'required|array|min:1',
+            'fecha_vencimiento_raw'          => 'required',
         ]);
 
         try {
             // 2. Iniciamos una transacción para garantizar integridad
             return DB::transaction(function () use ($request) {
-                $mesesEspanol = [
-                    'ene' => '01', 'feb' => '02', 'mar' => '03', 'abr' => '04',
-                    'may' => '05', 'jun' => '06', 'jul' => '07', 'ago' => '08',
-                    'sep' => '09', 'oct' => '10', 'nov' => '11', 'dic' => '12'
-                ];
 
-                try {
-                    $fechaInput = strtolower($request->fecha_vencimiento); // Aseguramos minúsculas
-                    $partes = explode('-', $fechaInput); // Divide en [27, mar, 2026]
-
-                    if (count($partes) === 3) {
-                        $dia = str_pad($partes[0], 2, '0', STR_PAD_LEFT);
-                        $mes = $mesesEspanol[$partes[1]] ?? '01';
-                        $anio = $partes[2];
-                        $fechaFormateada = "$anio-$mes-$dia"; // Resultado: 2026-03-27
-                    } else {
-                        // Fallback de seguridad si el formato falla
-                        $fechaFormateada = Carbon::now()->addDays(30)->format('Y-m-d');
-                    }
-                } catch (\Exception $e) {
-                    $fechaFormateada = Carbon::now()->addDays(30)->format('Y-m-d');
-                }
 
                 // A. Crear el encabezado de la Boleta
                 $boleta = Boleta::create([
@@ -92,7 +72,7 @@ class BoletaController extends Controller
                     'iva_comision'      => $request->iva_comision,
                     'total_pagar'       => $request->total_pagar,
                     'fecha_boleta'      => $request->fecha_boleta,
-                    'fecha_vencimiento' => $fechaFormateada,
+                    'fecha_vencimiento' => $request->fecha_vencimiento_raw,
                     'estatus'           => 'PE',
                     'numero_pagos' => $request->numero_pagos
                 ]);
@@ -201,7 +181,7 @@ class BoletaController extends Controller
                     BoletaTradicional::create([
                         'boleta_id'         => $boleta->id,
                         'refrendo'          => 1,
-                        'fecha_vencimiento' => $fechaFormateada,
+                        'fecha_vencimiento' => $request->fecha_vencimiento_raw,
                         'dias_reales'       => $request->plazo_dias,
                         'capital'           => $prestamo,
                         'interes'           => $interesTotalCobrado,
@@ -233,7 +213,7 @@ class BoletaController extends Controller
                 // Para boleta tradicional es solo un registro
                 $boleta->vencimientos()->create([
                     'no_pago'           => 1,
-                    'fecha_vencimiento' => $request->fecha_vencimiento,
+                    'fecha_vencimiento' => $request->fecha_vencimiento_raw,
                     'capital'           => $request->prestamo,
                     'comision'          => $request->comision,
                     'iva_comision'      => $request->iva_comision,

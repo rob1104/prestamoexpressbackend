@@ -44,6 +44,7 @@ class ClienteRequest extends FormRequest
             'observacion'    => 'nullable|string',
             'ineFrente'      => 'nullable|string',
             'ineReverso'     => 'nullable|string',
+            'email'          => 'nullable|string'
         ];
     }
 

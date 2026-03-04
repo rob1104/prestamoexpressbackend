@@ -13,7 +13,7 @@ class Cliente extends Model
     protected $fillable = [
         'nombre', 'identificacion', 'clasificacion', 'telefono1', 'telefono2',
         'ineFrente', 'ineReverso', 'callenum', 'colonia', 'municipio',
-        'estado', 'codPostal', 'ocupacion', 'observacion'
+        'estado', 'codPostal', 'ocupacion', 'observacion','email'
     ];
 
     public function getActivitylogOptions(): LogOptions
