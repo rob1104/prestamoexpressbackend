@@ -21,7 +21,18 @@ class BoletaController extends Controller
 
     public function show($id)
     {
-        $boleta = Boleta::with(['cliente', 'partidas', 'user', 'tradicional'])->find($id);
+        $boleta = Boleta::with(['cliente', 'partidas', 'tradicional'])
+            ->where('id', $id)
+            ->where('tipo_prestamo', 'tradicional')
+            ->first();
+
+        if (!$boleta) {
+            return response()->json(['message' => 'Folio no encontrado en el sistema tradicional'], 404);
+        }
+
+        if ($boleta->estatus !== 'PE') {
+            return response()->json(['message' => 'Folio no encontrado o ya liquidado'], 404);
+        }
 
         if(!$boleta) {
             return response()->json([
@@ -89,7 +100,7 @@ class BoletaController extends Controller
                 $pIva        = (float)($config->p_iva_interes ?? 0);
 
                 $prestamo = (float)$request->prestamo;
-                $interesTotalCobrado = (float)$request->comision; // El interés calculado en frontend
+                $interesTotalCobrado = (float)$request->comision;
 
                 $mAlmacenaje = round($prestamo * ($pAlmacenaje / 100), 2);
                 $mAdmin      = round($prestamo * ($pAdmin / 100), 2);

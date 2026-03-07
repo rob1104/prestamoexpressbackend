@@ -6,26 +6,23 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class CalendarioPago extends Model
+class CierreDiario extends Model
 {
     use LogsActivity;
 
-    protected $table = 'calendario_pagos';
-
     protected $fillable = [
-        'boleta_id', 'num_pago', 'fecha_vencimiento',
-        'monto', 'estatus', 'fecha_pago'
+        'fecha_cierre',
+        'prestamos_nuevos',
+        'capital_recuperado',
+        'interes_recuperado',
+        'user_id',
     ];
-    public function boleta()
-    {
-        return $this->belongsTo(Boleta::class);
-    }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->logFillable()
             ->logOnlyDirty()
-            ->useLogName('Calendario Pago');
+            ->useLogName('CIERRE DIARIO');
     }
 }

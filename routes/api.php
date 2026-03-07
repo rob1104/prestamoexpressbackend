@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\BoletaController;
+use App\Http\Controllers\BoletaMovimientoPagoController;
+use App\Http\Controllers\CierreDiarioController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CotizacionOroController;
 use App\Http\Controllers\MovimientoCajaController;
@@ -61,5 +63,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/boletas/pagos/liquidacion', [BoletaController::class, 'procesarLiquidacion']);
 
     Route::post('/movimientoscaja/{id}/registrar-efectivo', [MovimientoCajaController::class, 'registrarEfectivo'])->name('movimientoscaja.registrar-efectivo');
+
+    Route::get('/movimientos/boleta/{id}/pagos', [BoletaMovimientoPagoController::class, 'consultaBoleta']);
+
+    Route::get('cierre-diario/status', [CierreDiarioController::class, 'status'])->name('cierre-diario.status');
+    Route::post('cierre-diario/procesar', [CierreDiarioController::class, 'ejecutarCierreManualmente'])->name('cierre-diario.procesar');
 });
 
