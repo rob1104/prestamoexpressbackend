@@ -65,6 +65,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/movimientoscaja/{id}/registrar-efectivo', [MovimientoCajaController::class, 'registrarEfectivo'])->name('movimientoscaja.registrar-efectivo');
 
     Route::get('/movimientos/boleta/{id}/pagos', [BoletaMovimientoPagoController::class, 'consultaBoleta']);
+    Route::post('/movimientos/registrar-pago', [BoletaMovimientoPagoController::class, 'registrarPago']);
 
     Route::get('cierre-diario/status', [CierreDiarioController::class, 'status'])->name('cierre-diario.status');
     Route::post('cierre-diario/procesar', [CierreDiarioController::class, 'ejecutarCierreManualmente'])->name('cierre-diario.procesar');

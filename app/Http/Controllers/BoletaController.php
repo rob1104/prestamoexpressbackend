@@ -66,8 +66,6 @@ class BoletaController extends Controller
         try {
             // 2. Iniciamos una transacción para garantizar integridad
             return DB::transaction(function () use ($request) {
-
-
                 // A. Crear el encabezado de la Boleta
                 $boleta = Boleta::create([
                     'cliente_id'        => $request->cliente_id,
@@ -163,7 +161,7 @@ class BoletaController extends Controller
                         $pagosAPreGenerar[] = [
                             'boleta_id'         => $boleta->id,
                             'num_pago'          => (int) $numPago,
-                            'fecha_vencimiento' => Carbon::parse($fila['fecha_vencimiento'])->format('Y-m-d'),
+                            'fecha_vencimiento' => $fila['fecha_vencimiento_raw'],
 
                             // Llenamos el desglose exacto de la tabla de amortización
                             'importe'           => $fila['capital'],

@@ -6,9 +6,82 @@ use App\Models\Boleta;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BoletaMovimientoPagoController extends Controller
 {
+
+    public function registrarPago(Request $request)
+    {
+        // 1. Validación de los datos recibidos del frontend
+        $request->validate([
+            'boleta_id'      => 'required|exists:boletas,id',
+            'pagos_ids'      => 'required|array',
+            'total_pagado'   => 'required|numeric',
+            'total_recibido' => 'required|numeric',
+            'interes'        => 'required|numeric',
+            'recargos'       => 'required|numeric',
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            try {
+                $boleta = Boleta::findOrFail($request->boleta_id);
+
+                // 2. Actualizar estatus en la tabla calendario_pagos
+                DB::table('calendario_pagos')
+                    ->whereIn('id', $request->pagos_ids)
+                    ->update([
+                        'estatus' => 'PA', // PA = Pagado
+                        'fecha_pago' => now(),
+                        'updated_at' => now()
+                    ]);
+
+                // 3. Crear el registro contable en la tabla 'pagos'
+                $pagoId = DB::table('pagos')->insertGetId([
+                    'boleta_id'       => $boleta->id,
+                    'no_pago'         => DB::table('pagos')->where('boleta_id', $boleta->id)->count() + 1, //
+                    'fecha'           => now()->format('Y-m-d'), //
+                    'tipo_movimiento' => 4, // 4 = Liquidación/Abono en pagos fijos
+                    'prestamo'        => $boleta->prestamo,
+                    'interestotal'    => $request->interes,
+                    'recargosNormal'  => $request->recargos,
+                    'importe'         => $request->total_pagado,
+                    'totalPagado'     => $request->total_pagado,
+                    'totalRecibido'   => $request->total_recibido,
+                    'tipoPrestamo'    => 'PG', // 'PG' para diferenciar de Tradicional 'TR'
+                    'user_id'         => auth()->id() ?? 1,
+                    'caja_id'         => 1,
+                    'estatus'         => 'A', //
+                    'created_at'      => now(),
+                    'updated_at'      => now()
+                ]);
+
+                // 4. Verificar si la boleta debe liquidarse totalmente
+                // Si ya no quedan pagos con estatus 'PE' (Pendiente)
+                $pendientes = DB::table('calendario_pagos')
+                    ->where('boleta_id', $boleta->id)
+                    ->where('estatus', 'PE')
+                    ->count();
+
+                if ($pendientes === 0) {
+                    $boleta->update(['estatus' => 'LI']);
+                }
+
+                // 5. Preparar datos para el ticket
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Pago registrado correctamente',
+                    'pago_id' => $pagoId,
+                    'es_liquidacion' => ($pendientes === 0)
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error("Error registrando pago: " . $e->getMessage());
+                return response()->json(['message' => 'Error interno: ' . $e->getMessage()], 500);
+            }
+        });
+    }
+
     /**
      * Consulta la boleta y su calendario de pagos pendientes.
      */
@@ -33,7 +106,7 @@ class BoletaMovimientoPagoController extends Controller
         $hoy = now()->startOfDay();
         $calendario = DB::table('calendario_pagos')
             ->where('boleta_id', $id)
-            ->where('estatus', 'PE')
+           
             ->orderBy('num_pago', 'asc')
             ->get()
             ->map(function($pago) use ($hoy) {
