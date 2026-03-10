@@ -134,7 +134,12 @@ class Boleta extends Model
 
     public function tradicional()
     {
-        return $this->hasOne(BoletaTradicional::class);
+        return $this->hasMany(BoletaTradicional::class, 'boleta_id');
+    }
+
+    public function pagos()
+    {
+        return $this->hasMany(Pago::class, 'boleta_id');
     }
 
 

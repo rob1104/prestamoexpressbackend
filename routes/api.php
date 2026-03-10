@@ -52,15 +52,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/parametros', [ParametrosController::class, 'store'])->name('config.parametros.store');
     });
 
-
-
     Route::get('/promociones', [PromocionController::class, 'index'])->name('promociones.index');
-
     Route::post('/boletas', [BoletaController::class, 'store'])->name('boletas.store');
     Route::get('/boletas/{id}', [BoletaController::class, 'show'])->name('boletas.show');
-
     Route::post('/boletas/pagos/refrendo', [PagoController::class, 'registrarRefrendo'])->name('boletas.refrendo');
     Route::post('/boletas/pagos/liquidacion', [BoletaController::class, 'procesarLiquidacion']);
+    Route::get('/boletas', [BoletaController::class, 'index'])->name('boletas.index');
+    Route::get('/boletas/{id}/pdf', [BoletaController::class, 'downloadPdf'])->name('boletas.pdf');
+    Route::get('/boletas/{id}/detalles', [BoletaController::class, 'detalles']);
 
     Route::post('/movimientoscaja/{id}/registrar-efectivo', [MovimientoCajaController::class, 'registrarEfectivo'])->name('movimientoscaja.registrar-efectivo');
 

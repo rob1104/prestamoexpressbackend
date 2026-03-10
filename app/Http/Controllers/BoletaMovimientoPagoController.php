@@ -106,7 +106,7 @@ class BoletaMovimientoPagoController extends Controller
         $hoy = now()->startOfDay();
         $calendario = DB::table('calendario_pagos')
             ->where('boleta_id', $id)
-           
+
             ->orderBy('num_pago', 'asc')
             ->get()
             ->map(function($pago) use ($hoy) {

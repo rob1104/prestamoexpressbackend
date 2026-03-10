@@ -10,6 +10,7 @@ use App\Models\MovimientosCaja;
 use App\Models\NotaCredito;
 use App\Models\Pago;
 use App\Models\SucursalConfig;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -18,6 +19,51 @@ use Illuminate\Support\Facades\DB;
 
 class BoletaController extends Controller
 {
+    public function index(Request $request)
+    {
+        $query = Boleta::with(['cliente', 'user']);
+
+        if($request->filled('search'))
+        {
+            $searchTerm = $request->search;
+            $query->whereHas('cliente', function ($q) use ($searchTerm) {
+                $q->where('nombre', 'LIKE', "%$searchTerm%")
+                    ->orWhere('id', 'LIKE', "$searchTerm%");
+            });
+        }
+        if ($request->filled('tipos')) {
+            $query->whereIn('tipo_prestamo', $request->tipos);
+        }
+        if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
+            $query->whereBetween('fecha_boleta', [$request->fecha_inicio, $request->fecha_fin]);
+        }
+
+        if ($request->filled('folio_exacto')) {
+            $query->where('id', $request->folio_exacto);
+        }
+
+        $sortBy = $request->input('sortBy', 'id');
+        $descending = filter_var($request->input('descending', true), FILTER_VALIDATE_BOOLEAN);
+        $direccion = $descending ? 'desc' : 'asc';
+        if ($sortBy) {
+            $query->orderBy($sortBy, $direccion);
+        }
+
+        $rowsPerPage = $request->input('rowsPerPage', 50);
+        $rowsPerPage = $rowsPerPage > 0 ? $rowsPerPage : 15;
+        $boletas = $query->paginate($rowsPerPage);
+        return response()->json($boletas);
+    }
+
+    public function downloadPdf($id)
+    {
+        $boleta = Boleta::with(['cliente', 'partidas'])->findOrFail($id);
+        $sucursal = SucursalConfig::first();
+        $pdf = Pdf::loadView('contratoBoleta', compact('boleta', 'sucursal'));
+        $pdf->setPaper('legal', 'portrait');
+
+        return $pdf->download("Contrato_Boleta_Folio_$boleta->id.pdf");
+    }
 
     public function show($id)
     {
@@ -47,6 +93,28 @@ class BoletaController extends Controller
             'boleta' => $boleta,
             'pagos' => $pagos
         ]);
+    }
+
+    public function detalles($id)
+    {
+        // Traemos la boleta sin importar si es tradicional, pagos, o si ya está liquidada
+        $boleta = Boleta::with(['cliente', 'partidas'])->findOrFail($id);
+
+        // Cargamos el historial dependiendo de qué tipo sea
+        if ($boleta->tipo_prestamo === 'tradicional') {
+            // Carga los pagos (refrendos/liquidaciones)
+            $boleta->load(['pagos', 'tradicional' => function($query) {
+              $query->orderBy('id', 'desc');
+            }]);
+        }
+        elseif ($boleta->tipo_prestamo === 'pagos') {
+            // Carga el calendario de pagos ordenado
+            $boleta->load(['calendarioPagos' => function($query) {
+                $query->orderBy('num_pago', 'asc');
+            }]);
+        }
+
+        return response()->json($boleta);
     }
 
     public function store(Request $request)
@@ -290,7 +358,7 @@ class BoletaController extends Controller
             $boleta = Boleta::with('cliente')->findOrFail($request->boleta_id);
 
             if (in_array($boleta->estatus, ['Liquidada', 'Desempeñada', 'Inactiva'])) {
-                throw new \Exception("Esta boleta ya fue liquidada anteriormente.");
+                throw new Exception("Esta boleta ya fue liquidada anteriormente.");
             }
 
             $bonificacionNC = $request->input('bonificacion', 0);
