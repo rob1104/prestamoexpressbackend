@@ -98,10 +98,24 @@ class ClienteController extends Controller
      */
     public function destroy(Cliente $cliente)
     {
-        $cliente->delete();
-        return response()->json([
-            'message' => 'El cliente ha sido eliminado definitivamente.'
-        ]);
+        if ($cliente->boletas()->exists()) {
+           return response()->json([
+               'status' => 'warning',
+               'message' => 'No es posible eliminar al cliente. Existen boletas (folios) registradas a su nombre en el historial.'
+           ], 422);
+        }
+        try {
+            $cliente->delete();
+            return response()->json([
+                'message' => 'El cliente ha sido eliminado definitivamente.'
+            ]);
+        }
+        catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al intentar eliminar cliente: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

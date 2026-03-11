@@ -16,6 +16,11 @@ class Cliente extends Model
         'estado', 'codPostal', 'ocupacion', 'observacion','email'
     ];
 
+    public function boletas()
+    {
+        return $this->hasMany(Boleta::class);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

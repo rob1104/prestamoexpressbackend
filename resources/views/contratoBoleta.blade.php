@@ -64,7 +64,7 @@
     FOLIO No. <span class="text-decoration-underline fs-5" style="color: red">&nbsp;&nbsp;&nbsp;{{$boleta->id}}&nbsp;&nbsp;&nbsp;</span>
 </div>
 <div class="nTexto fw-bold" style="line-height: 14px">
-    CONTRATO DE MUTUO CON INTERÉS Y GARANTÍA PRENDARIA (PRÉSTAMO), que celebran: <span>{{$sucursal->nombre_sucursal}},</span>
+    CONTRATO DE MUTUO CON INTERÉS Y GARANTÍA PRENDARIA (PRÉSTAMO), que celebran: <span>{{$sucursal->razon_social}},</span>
     EL PROVEEDOR, con domicilio <span>{{$sucursal->calle_num}}, {{$sucursal->colonia}}</span> <span>{{$sucursal->municipio}}</span>, <span>{{$sucursal->estado}}</span>, MEXICO. C.P. <span>{{$sucursal->codigo_postal}}</span>, RFC: <span>{{$sucursal->rfc}}</span>,
     Tel: <span>{{$sucursal->telefono_1}}</span>, Correo: <span>{{$sucursal->email}}</span>, en caso de persona moral: representado por : Martha Edith Muñéz Garza y EL
     CONSUMIDOR <span>{{$boleta->cliente->nombre}}</span>, que se identifica con INE número: <span>{{$boleta->cliente->identificacion ?? 'NO PROPORCIONA'}}</span>, con domicilio
@@ -277,7 +277,7 @@
     <tr>
         <td class="normalTd" colspan="3">
             <div class="nTexto">EL CONSUMIDOR recoge en el acto y a su entera satsfacción la(s) prenda(s)
-                arriba descrita(s), por lo que otorga a <span>{{$sucursal->nombre_sucursal}}</span>, el finiquito
+                arriba descrita(s), por lo que otorga a <span>{{$sucursal->razon_social}}</span>, el finiquito
                 mas amplio que en derecho corresponda, liberándolo de cualquier
                 responsabilidad jurídica que hubiere surgido o pudiese surgir en relación al
                 contrato y a la prenda.</div>
@@ -308,7 +308,7 @@
 <div>
     <table class="table" style="text-align: justify">
         <tr class="aTexto lh-1">
-            <td style="width: 50%">
+            <td style="width: 50%; vertical-align: top; padding-top: 0;">
                 <div style="text-align: justify">
                     CONTRATO DE MUTUO CON INTERÉS Y GARANTÍA PRENDARIA (PRÉSTAMO) QUE CELEBRAN POR UNA PARTE {{$sucursal->nombre}},
                     CUYO NOMBRE APARECE EN EL RUBRO DE LA CARÁTULA Y POR LA OTRA, LA PERSONA CUYO NOMBRE Y DOMICILIO APARECE EN LA CARÁTULA,
@@ -431,7 +431,8 @@
                 <div>c) “EL PROVEEDOR” recibirá la documentación anterior, y le dará a “EL CONSUMIDOR” un comprobante en el cual se hará la
                     descripción de los documentos presentados, así como de la Prenda motivo de la reclamación, misma que deberá coincidir con la establecida
                     en el Contrato, indicando el valor de la Prenda conforme al avalúo practicado. El comprobante deberá de contener número de reclamación,
-                    razón social del proveedor, R.F.C., domicilio, nombre y firma de quien recibe la reclamación.</div>
+                    raz
+                    ón social del proveedor, R.F.C., domicilio, nombre y firma de quien recibe la reclamación.</div>
                 <div>d) “EL PROVEEDOR” se obliga a restituir o pagar la Prenda, a elección de “EL CONSUMIDOR”, en el término de 10 días naturales
                     siguientes a la entrega de la documentación por parte de este último.</div>
                 <div>e) “EL PROVEEDOR” pagará a “EL CONSUMIDOR” el valor de la Prenda conforme al avalúo realizado y que está estipulado en la Carátula
@@ -446,7 +447,7 @@
                     costos y gastos del préstamo. El referido Costo Anual Total se calculará utlizando la metodología establecida por el Banco de México, vigente
                     en la fecha del cálculo respectivo.</div>
             </td>
-            <td style="width: 50%">
+            <td style="width: 50%; vertical-align: top; padding-top: 0;">
                 Para el cálculo de Costo Mensual Total (CMT) y del Costo Diario Total (CDT) se utlizará la misma metodología que se aplica para el cálculo
                 del CAT establecida por el Banco de México, ajustando los valores de intervalo de tiempo que correspondan para el tipo de préstamo que se
                 trate, vigente en la fecha del cálculo respectivo.
