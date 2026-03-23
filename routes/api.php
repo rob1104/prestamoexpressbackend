@@ -10,6 +10,7 @@ use App\Http\Controllers\MovimientoCajaController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ParametrosController;
 use App\Http\Controllers\PromocionController;
+use App\Http\Controllers\ReporteCarteraController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -52,6 +53,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/parametros', [ParametrosController::class, 'store'])->name('config.parametros.store');
     });
 
+    Route::prefix('/reportes')->group(function() {
+        Route::get('/cartera', [ReporteCarteraController::class, 'generarReporteCartera'])->name('reportes.cartera');
+        Route::get('/cartera/url-firmada', [ReporteCarteraController::class, 'generaUrlFirmadaReporteCartera']);
+    });
+
     Route::get('/promociones', [PromocionController::class, 'index'])->name('promociones.index');
     Route::post('/boletas', [BoletaController::class, 'store'])->name('boletas.store');
     Route::get('/boletas/{id}', [BoletaController::class, 'show'])->name('boletas.show');
@@ -70,3 +76,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('cierre-diario/procesar', [CierreDiarioController::class, 'ejecutarCierreManualmente'])->name('cierre-diario.procesar');
 });
 
+Route::get('/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');
