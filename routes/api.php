@@ -11,6 +11,7 @@ use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ParametrosController;
 use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\ReporteCarteraController;
+use App\Http\Controllers\ReporteFlujoCajaController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -56,7 +57,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('/reportes')->group(function() {
         Route::get('/cartera', [ReporteCarteraController::class, 'generarReporteCartera'])->name('reportes.cartera');
         Route::get('/cartera/url-firmada', [ReporteCarteraController::class, 'generaUrlFirmadaReporteCartera']);
-    });
+        Route::get('/flujo-caja', [ReporteFlujoCajaController::class, 'generarFlujoCaja'])->name('reportes.flujocaja');
+        Route::get('/flujo-caja/url-firmada', [ReporteFlujoCajaController::class, 'generarUrlFirmada']);    });
 
     Route::get('/promociones', [PromocionController::class, 'index'])->name('promociones.index');
     Route::post('/boletas', [BoletaController::class, 'store'])->name('boletas.store');
@@ -76,4 +78,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('cierre-diario/procesar', [CierreDiarioController::class, 'ejecutarCierreManualmente'])->name('cierre-diario.procesar');
 });
 
-Route::get('/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');
+Route::get('/reportes/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');
+Route::get('/reportes/flujo-caja/pdf', [ReporteFlujoCajaController::class, 'generarPDF'])->name('reporte.flujocaja.pdf')->middleware('signed');

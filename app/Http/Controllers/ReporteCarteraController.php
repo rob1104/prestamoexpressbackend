@@ -68,7 +68,7 @@ class ReporteCarteraController extends Controller
 
         // --- CÁLCULO DE TOTALES FINALES ---
         $cap_final = ($vig_total->monto ?? 0) + ($ven_total->monto ?? 0) + ($adj_total->monto ?? 0);
-        // Suma de comisiones de todo lo pendiente
+        // Suma de comisiones de lo pendiente
         $com_final = DB::table('boletas')->where('estatus', 'PE')->sum(DB::raw('comision + iva_comision'));
 
         // --- RESPUESTA ESTRUCTURADA EXACTA PARA EL FRONT ---
