@@ -413,6 +413,14 @@ class BoletaController extends Controller
 
             $trad = BoletaTradicional::where('boleta_id', $boleta->id)->latest()->first();
             $trad->update(['estatus' => 'LI']);
+
+
+            $nombreCompleto = trim(
+                ($boleta->cliente->nombre ?? 'PÚBLICO GENERAL') . ' ' .
+                ($boleta->cliente->apellido_paterno ?? '') . ' ' .
+                ($boleta->cliente->apellido_materno ?? '')
+            );
+
             // 5. Preparar datos para el Ticket
             $ticket_data = [
                 'folio_contrato'  => $boleta->id,
@@ -426,7 +434,7 @@ class BoletaController extends Controller
                 'cambio'          => $request->total_recibido - $request->total_pagado,
                 'cliente' => [
                     'id'     => $boleta->cliente_id ?? '000',
-                    'nombre' => $boleta->cliente->nombre ?? 'PÚBLICO GENERAL',
+                    'nombre' => strtoupper($nombreCompleto) ?? 'PÚBLICO GENERAL',
                 ]
             ];
 
