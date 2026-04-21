@@ -154,7 +154,7 @@ class PagoController extends Controller
                     'no_pago' => $tradicionalActual->refrendo,
                     'fecha_vencimiento' => $nuevaFechaVenc->format('d-M-Y'), // Formato visual SICAE
                     'cliente_id' => $bol->cliente->id,
-                    'cliente_nombre' => $bol->cliente->nombre,
+                    'cliente_nombre' => $bol->cliente->nombre . ' ' . $bol->cliente->apellido_paterno . ' ' . $bol->cliente->apellido_materno,
                     'total_pagado' => $liquidacion3,
                     'dias' => $trad->dias_reales,
                     'no_bolsa' => $bol->no_bolsa,
