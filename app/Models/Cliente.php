@@ -12,6 +12,7 @@ class Cliente extends Model
 
     protected $fillable = [
         'nombre', 'identificacion', 'clasificacion', 'telefono1', 'telefono2',
+        'apellido_paterno','apellido_materno','rfc','estado_origen','fecha_nacimiento',
         'ineFrente', 'ineReverso', 'callenum', 'colonia', 'municipio',
         'estado', 'codPostal', 'ocupacion', 'observacion','email'
     ];

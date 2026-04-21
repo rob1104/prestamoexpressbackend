@@ -25,14 +25,16 @@ class ClienteController extends Controller
         $search = $request->query('search');
 
         if (!$search) {
-            return Cliente::all();
+            return Cliente::limit(50)->get(['id', 'nombre', 'apellido_paterno', 'apellido_materno', 'identificacion', 'clasificacion']);
         }
 
         return Cliente::where('nombre', 'LIKE', "%{$search}%")
+            ->orWhere('apellido_paterno', 'LIKE', "%{$search}%") // Busca por Apellido Paterno
+            ->orWhere('apellido_materno', 'LIKE', "%{$search}%") // Busca por Apellido Materno
             ->orWhere('id', 'LIKE', "{$search}%")
             ->orderBy('nombre', 'asc')
             ->limit(50)
-            ->get(['id', 'nombre', 'identificacion', 'clasificacion']);
+            ->get(['id', 'nombre', 'apellido_paterno', 'apellido_materno', 'identificacion', 'clasificacion']);
     }
 
     /**
@@ -41,6 +43,12 @@ class ClienteController extends Controller
     public function store(ClienteRequest $request)
     {
         $data = $request->validated();
+
+        // Normalización a mayúsculas antes de guardar
+        $data['nombre'] = strtoupper($data['nombre']);
+        $data['apellido_paterno'] = strtoupper($data['apellido_paterno'] ?? '');
+        $data['apellido_materno'] = strtoupper($data['apellido_materno'] ?? '');
+        $data['rfc'] = strtoupper($data['rfc'] ?? '');
 
         // Procesar INE FRENTE
         if ($request->has('ineFrente') && !empty($request->ineFrente)) {

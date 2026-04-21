@@ -44,7 +44,12 @@ class ClienteRequest extends FormRequest
             'observacion'    => 'nullable|string',
             'ineFrente'      => 'nullable|string',
             'ineReverso'     => 'nullable|string',
-            'email'          => 'nullable|string'
+            'email'          => 'nullable|string',
+            'apellido_paterno' => 'required|string|max:255',
+            'apellido_materno' => 'nullable|string|max:255',
+            'rfc' => 'nullable|string|size:13|unique:clientes,rfc,' . ($this->cliente->id ?? ''),
+            'estado_origen' => 'nullable|string',
+            'fecha_nacimiento' => 'nullable|date',
         ];
     }
 
