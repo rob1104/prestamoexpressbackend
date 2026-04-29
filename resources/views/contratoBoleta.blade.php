@@ -42,15 +42,49 @@
     $fechaVencimiento = $fechav->translatedFormat('d F Y');
     $fechaAdhesion = $fechaa->translatedFormat('d \d\e F \d\e Y');
 
-    // Determinar el nombre del periodo
     $nombrePeriodo = 'Mensual';
     if ($boleta->periodo_id == 1) $nombrePeriodo = 'Semanal';
     if ($boleta->periodo_id == 2) $nombrePeriodo = 'Catorcenal';
     if ($boleta->periodo_id == 3) $nombrePeriodo = 'Quincenal';
 
-    // Cálculos informativos (CAT e Interés Anual)
     $interesAnual = $boleta->p_interes * 12;
-    $cat = $interesAnual * 1.16; // Aproximación del CAT con IVA
+    $cat = $interesAnual * 1.16;
+
+    // --- CÁLCULOS MATEMÁTICOS EXACTOS ---
+    $almacenaje = 0;
+    $iva        = 0;
+    $admin      = 0;
+    $interesPuro = 0;
+
+    if ($boleta->tipo_prestamo === 'tradicional' && $boleta->tradicional && $boleta->tradicional->count() > 0) {
+        // Para Tradicional: Respeta lo que se guardó en la base de datos
+        $trad = $boleta->tradicional->first();
+        $almacenaje  = $trad->almacenaje;
+        $iva         = $trad->iva_interes;
+        $admin       = $trad->administracion;
+        $interesPuro = $boleta->comision - $almacenaje - $iva;
+    } else {
+        // Para PAGOS: Fuerza la proporción matemática exacta (73.9% y 26.1%)
+        $interesTotalCobrado = (float)$boleta->comision;
+
+        // 1. Extraemos el IVA exacto ($611.17)
+        $subtotalSinIva = $interesTotalCobrado / 1.16;
+        $mIva = round($interesTotalCobrado - $subtotalSinIva, 2);
+
+        // 2. Repartimos el Subtotal ($3,819.83) en las proporciones exactas
+        $mAlmacenaje = round($subtotalSinIva * 0.739027, 2);
+        $mIntDiv     = round($subtotalSinIva * 0.260973, 2);
+
+        // 3. Ajuste de centavos (El almacenaje absorbe cualquier decimal suelto para cuadrar perfecto)
+        $diferencia = round($subtotalSinIva - ($mAlmacenaje + $mIntDiv), 2);
+
+        $almacenaje  = $mAlmacenaje + $diferencia;
+        $iva         = $mIva;
+        $admin       = 0; // En pagos no hay gasto de administración
+        $interesPuro = $mIntDiv;
+    }
+
+    $interesPuro = max(0, $interesPuro);
 @endphp
 <div class="nTexto fw-bold mb-1">Fecha de celebración del contrato: <span>H. MATAMOROS, TAMP. A</span>
     <span class="text-decoration-underline">
@@ -101,12 +135,12 @@
             <div>Estimado al plazo máximo de desempeño o refrendo</div>
         </td>
         <td class="normalTd" style="text-align: left">
-            <div>Comisión por Almacenaje: $ % [Claus 11 a]</div>
+            <div>Comisión por Almacenaje: ${{ number_format($almacenaje, 2, '.', ',') }} [Claus 11 a]</div>
             <div>Comisión por Avalúo: $<u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u> [Claus 11 b]</div>
             <div>Comisión por Comercialización: % [Claus 11 c]</div>
             <div>Comisión por reposición de contrato: $<span>10.00</span> [Claus 11 d]</div>
             <div>Desempeño Extemporáneo: % [Claus 11 e]</div>
-            <div>Gastos de administración: $<span>{{number_format($boleta->administracion ?? 0, 2, '.', ',')}}</span> [Claus 11 f]</div>
+            <div>Gastos de administración: $<span>{{ number_format($admin, 2, '.', ',') }}</span> [Claus 11 f]</div>
         </td>
     </tr>
     <tr>
@@ -161,11 +195,20 @@
                 <tr>
                     <td class="normalTd" style="border-width: 1px">{{$boleta->meses ?? 1}}</td>
                     <td class="normalTd" style="border-width: 1px">$<span>{{number_format($boleta->prestamo, 2, '.', ',')}}</span></td>
-                    <td class="normalTd" style="border-width: 1px">$ <span>{{number_format($boleta->comision, 2, '.', ',')}}</span></td>
-                    <td class="normalTd" style="border-width: 1px">$ <span>{{number_format($boleta->almacenaje ?? 0, 2, '.', ',')}}</span></td>
-                    <td class="normalTd" style="border-width: 1px">$ <span>{{number_format($boleta->iva_comision, 2, '.', ',')}}</span></td>
-                    <td class="normalTd" style="border-width: 1px">$ <span>{{number_format($boleta->comision + $boleta->iva_comision, 2, '.', ',')}}</span></td>
-                    <td class="normalTd" style="border-width: 1px">$ <span>{{number_format($boleta->total_pagar, 2, '.', ',')}}</span></td>
+
+                    <td class="normalTd" style="border-width: 1px">$<span>{{number_format($interesPuro, 2, '.', ',')}}</span></td>
+                    <td class="normalTd" style="border-width: 1px">$<span>{{number_format($almacenaje, 2, '.', ',')}}</span></td>
+                    <td class="normalTd" style="border-width: 1px">$<span>{{number_format($iva, 2, '.', ',')}}</span></td>
+
+                    <td class="normalTd" style="border-width: 1px; font-weight: bold;">
+                        @if($boleta->tipo_prestamo == 'pagos')
+                            ---
+                        @else
+                            $<span>{{number_format($boleta->comision, 2, '.', ',')}}</span>
+                        @endif
+                    </td>
+
+                    <td class="normalTd" style="border-width: 1px">$<span>{{number_format($boleta->total_pagar, 2, '.', ',')}}</span></td>
                     <td class="normalTd" style="border-width: 1px"><span>{{strtoupper($fechaVencimiento)}}</span></td>
                 </tr>
             </table>
@@ -211,8 +254,12 @@
                 <tr>
                     <td class="normalTd" style="border-width: 1px;" colspan="2">
                         @foreach ($boleta->partidas as $d)
-                            <div style="text-align: left; padding-left: 5px;">
-                                <b>{{ strtoupper($d->tipo) }}:</b> {{ strtoupper($d->descripcion) }}
+                            <div style="text-align: left; padding-left: 5px; margin-bottom: 2px;">
+                                <b style="color: #1e3a8a;">
+                                    {{ strtoupper($d->subtipo) }}
+                                    ({{ $d->gramos_cantidad }}{{ $d->tipo == 'moneda' ? ' pzs' : ' gr' }}):
+                                </b>
+                                {{ strtoupper($d->descripcion) }}
                             </div>
                         @endforeach
                     </td>

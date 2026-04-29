@@ -57,7 +57,7 @@ class BoletaController extends Controller
 
     public function downloadPdf($id)
     {
-        $boleta = Boleta::with(['cliente', 'partidas'])->findOrFail($id);
+        $boleta = Boleta::with(['cliente', 'partidas', 'tradicional'])->findOrFail($id);
         $sucursal = SucursalConfig::first();
         $pdf = Pdf::loadView('contratoBoleta', compact('boleta', 'sucursal'));
         $pdf->setPaper('legal', 'portrait');
@@ -168,14 +168,28 @@ class BoletaController extends Controller
                 $prestamo = (float)$request->prestamo;
                 $interesTotalCobrado = (float)$request->comision;
 
-                $mAlmacenaje = round($prestamo * ($pAlmacenaje / 100), 2);
-                $mAdmin      = round($prestamo * ($pAdmin / 100), 2);
-                $mCustodia   = round($prestamo * ($pCustodia / 100), 2);
-                $mIntDiv     = round($prestamo * ($pIntDiv / 100), 2);
-                $mIva        = round($prestamo * ($pIva / 100), 2);
+                // --- NUEVA LÓGICA DE DISTRIBUCIÓN MATEMÁTICA ---
+                // 1. Extraemos el IVA exacto del total cobrado
+                $subtotalSinIva = $interesTotalCobrado / 1.16;
+                $mIva = round($interesTotalCobrado - $subtotalSinIva, 2);
 
-                $sumaPartes = $mAlmacenaje + $mAdmin + $mCustodia + $mIntDiv + $mIva;
-                $diferencia = round($interesTotalCobrado - $sumaPartes, 2);
+                // 2. Repartimos el subtotal
+                $sumaPorcentajes = $pAlmacenaje + $pAdmin + $pCustodia + $pIntDiv;
+
+                if ($sumaPorcentajes > 0) {
+                    $mAlmacenaje = round($subtotalSinIva * ($pAlmacenaje / $sumaPorcentajes), 2);
+                    $mAdmin      = round($subtotalSinIva * ($pAdmin / $sumaPorcentajes), 2);
+                    $mIntDiv     = round($subtotalSinIva * ($pIntDiv / $sumaPorcentajes), 2);
+                    $mCustodia   = round($subtotalSinIva * ($pCustodia / $sumaPorcentajes), 2);
+                } else {
+                    $mAlmacenaje = round($subtotalSinIva * 0.7390, 2);
+                    $mIntDiv     = round($subtotalSinIva * 0.2610, 2);
+                    $mAdmin = 0; $mCustodia = 0;
+                }
+
+                // 3. Ajuste de centavos (el Almacenaje absorbe la diferencia)
+                $sumaPartes = $mAlmacenaje + $mAdmin + $mCustodia + $mIntDiv;
+                $diferencia = round($subtotalSinIva - $sumaPartes, 2);
 
                 $mAlmacenaje += $diferencia;
 
