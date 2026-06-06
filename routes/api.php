@@ -65,6 +65,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/boletas/{id}', [BoletaController::class, 'show'])->name('boletas.show');
     Route::post('/boletas/pagos/refrendo', [PagoController::class, 'registrarRefrendo'])->name('boletas.refrendo');
     Route::post('/boletas/pagos/liquidacion', [BoletaController::class, 'procesarLiquidacion']);
+    Route::post('/boletas/pagos/abono', [BoletaController::class, 'procesarAbono']);
     Route::get('/boletas', [BoletaController::class, 'index'])->name('boletas.index');
     Route::get('/boletas/{id}/pdf', [BoletaController::class, 'downloadPdf'])->name('boletas.pdf');
     Route::get('/boletas/{id}/detalles', [BoletaController::class, 'detalles']);

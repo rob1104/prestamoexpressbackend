@@ -458,4 +458,146 @@ class BoletaController extends Controller
             ]);
         });
     }
+
+    public function procesarAbono(Request $request)
+    {
+        $request->validate([
+            'boleta_id'      => 'required|exists:boletas,id',
+            'importe_pago'   => 'required|numeric',
+            'abono_capital'  => 'required|numeric|min:1',
+            'recargos'       => 'required|numeric',
+            'dias_vencidos'  => 'required|integer',
+            'total_pagado'   => 'required|numeric',
+            'total_recibido' => 'required|numeric',
+            'denominaciones' => 'required|json'
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            $boleta = Boleta::with('cliente')->findOrFail($request->boleta_id);
+
+            if (in_array($boleta->estatus, ['Liquidada', 'Desempeñada', 'Inactiva', 'LI'])) {
+                throw new Exception("Esta boleta ya no admite abonos.");
+            }
+
+            if ($request->abono_capital >= $boleta->prestamo) {
+                throw new Exception("El abono debe ser menor al préstamo. Utilice Liquidación.");
+            }
+
+            $hoy = now();
+
+            // 1. Registro en Caja de la entrada de dinero
+            MovimientosCaja::create([
+                'caja_id'      => $request->caja_id ?? 1,
+                'boleta_id'    => $boleta->id,
+                'user_id'      => auth()->id(),
+                'tipo'         => 'ENTRADA',
+                'monto'        => $request->total_pagado,
+                'denominacion' => $request->denominaciones,
+            ]);
+
+            // 2. Insertar el Pago (Historial)
+            $pagoId = DB::table('pagos')->insertGetId([
+                'boleta_id'         => $boleta->id,
+                'no_pago'           => $request->no_pago ?? 1,
+                'fecha'             => $hoy->format('Y-m-d'),
+                'tipo_movimiento'   => 2, // 2 = Abono a Capital
+                'prestamo'          => $boleta->prestamo,
+                'interestotal'      => $boleta->comision,
+                'recargosNormal'    => $request->recargos,
+                'dias_vencidos'     => $request->dias_vencidos,
+                'importe'           => $request->total_pagado, // Refrendo + Abono
+                'user_id'           => auth()->id(),
+                'totalPagado'       => $request->total_pagado,
+                'totalRecibido'     => $request->total_recibido,
+                'caja_id'           => $request->caja_id ?? 1,
+                'estatus'           => 'A',
+                'created_at'        => $hoy,
+                'updated_at'        => $hoy
+            ]);
+
+            // 3. RECALCULAR LOS NUEVOS VALORES DE LA BOLETA (Lógica VB6)
+            $nuevoPrestamo = $boleta->prestamo - $request->abono_capital;
+
+            // Calculamos la nueva comisión sobre el saldo restante (ej. 800 * 0.20 = 160)
+            $porcentajeInteres = $boleta->p_interes / 100;
+            $nuevaComisionTotal = round($nuevoPrestamo * $porcentajeInteres, 2);
+
+            // Extraemos los porcentajes de la sucursal para dividir la nueva comisión
+            $config = SucursalConfig::first();
+            $pAlmacenaje = (float)($config->p_almacenaje ?? 0);
+            $pAdmin      = (float)($config->p_administracion ?? 0);
+            $pCustodia   = (float)($config->p_custodia ?? 0);
+            $pIntDiv     = (float)($config->p_interes_dividido ?? 0);
+
+            $subtotalSinIva = $nuevaComisionTotal / 1.16;
+            $mIva = round($nuevaComisionTotal - $subtotalSinIva, 2);
+            $sumaPorcentajes = $pAlmacenaje + $pAdmin + $pCustodia + $pIntDiv;
+
+            if ($sumaPorcentajes > 0) {
+                $mAlmacenaje = round($subtotalSinIva * ($pAlmacenaje / $sumaPorcentajes), 2);
+                $mAdmin      = round($subtotalSinIva * ($pAdmin / $sumaPorcentajes), 2);
+                $mIntDiv     = round($subtotalSinIva * ($pIntDiv / $sumaPorcentajes), 2);
+                $mCustodia   = round($subtotalSinIva * ($pCustodia / $sumaPorcentajes), 2);
+            } else {
+                $mAlmacenaje = round($subtotalSinIva * 0.7390, 2);
+                $mIntDiv     = round($subtotalSinIva * 0.2610, 2);
+                $mAdmin = 0; $mCustodia = 0;
+            }
+
+            $sumaPartes = $mAlmacenaje + $mAdmin + $mCustodia + $mIntDiv;
+            $mAlmacenaje += round($subtotalSinIva - $sumaPartes, 2); // Ajuste de centavos
+
+            // 4. Actualizar la Boleta Maestra con los nuevos saldos
+            $nuevaFechaVencimiento = $hoy->addDays(30)->format('Y-m-d'); // Extender el plazo
+
+            $boleta->update([
+                'prestamo'          => $nuevoPrestamo,
+                'comision'          => $nuevaComisionTotal,
+                'total_pagar'       => $nuevoPrestamo + $nuevaComisionTotal,
+                'fecha_vencimiento' => $nuevaFechaVencimiento
+            ]);
+
+            // 5. Crear el nuevo periodo (BoletaTradicional)
+            $ultimoRefrendo = BoletaTradicional::where('boleta_id', $boleta->id)->latest('id')->first();
+            $nuevoNumRefrendo = ($ultimoRefrendo->refrendo ?? 1) + 1;
+
+            if ($ultimoRefrendo) {
+                $ultimoRefrendo->update(['estatus' => 'PA']); // Marcar el anterior como pagado
+            }
+
+            BoletaTradicional::create([
+                'boleta_id'         => $boleta->id,
+                'refrendo'          => $nuevoNumRefrendo,
+                'fecha_vencimiento' => $nuevaFechaVencimiento,
+                'dias_reales'       => 30,
+                'capital'           => $nuevoPrestamo,
+                'interes'           => $nuevaComisionTotal,
+                'almacenaje'        => $mAlmacenaje,
+                'administracion'    => $mAdmin,
+                'custodia'          => $mCustodia,
+                'interesdividido'   => $mIntDiv,
+                'iva_interes'       => $mIva,
+                'estatus'           => 'PE',
+                'user_id'           => auth()->id(),
+            ]);
+
+            // 6. Preparar ticket
+            $nombreCompleto = trim(($boleta->cliente->nombre ?? 'PÚBLICO') . ' ' . ($boleta->cliente->apellido_paterno ?? ''));
+
+            return response()->json([
+                'message'     => 'Abono procesado correctamente',
+                'ticket_data' => [
+                    'folio_contrato'  => $boleta->id,
+                    'numero_refrendo' => $request->no_pago,
+                    'no_bolsa'        => $boleta->no_bolsa,
+                    'prestamo'        => $boleta->prestamo, // Nuevo saldo para imprimir
+                    'recargos'        => $request->recargos,
+                    'total_pagado'    => $request->total_pagado,
+                    'recibido'        => $request->total_recibido,
+                    'fecha_vencimiento' => $nuevaFechaVencimiento,
+                    'cliente' => ['id' => $boleta->cliente_id, 'nombre' => strtoupper($nombreCompleto)]
+                ]
+            ]);
+        });
+    }
 }
