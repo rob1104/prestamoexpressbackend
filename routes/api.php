@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\BoletaController;
 use App\Http\Controllers\BoletaMovimientoPagoController;
+use App\Http\Controllers\CatalogoJoyeriaController;
 use App\Http\Controllers\CierreDiarioController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CotizacionOroController;
@@ -14,6 +15,8 @@ use App\Http\Controllers\ReporteCarteraController;
 use App\Http\Controllers\ReporteFlujoCajaController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VentaElectronicosController;
+use App\Http\Controllers\VentaJoyeriaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +80,24 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('cierre-diario/status', [CierreDiarioController::class, 'status'])->name('cierre-diario.status');
     Route::post('cierre-diario/procesar', [CierreDiarioController::class, 'ejecutarCierreManualmente'])->name('cierre-diario.procesar');
+
+    Route::get('/ventas-joyeria/nota/{folio}', [VentaJoyeriaController::class, 'buscarNota']);
+    Route::get('/ventas-joyeria/siguiente-folio', [VentaJoyeriaController::class, 'siguienteFolio']);
+    Route::post('/ventas-joyeria/procesar', [VentaJoyeriaController::class, 'procesarVenta']);
+
+    Route::get('/catalogos-joyeria/categorias', [CatalogoJoyeriaController::class, 'getCategorias']);
+    Route::post('/catalogos-joyeria/categorias', [CatalogoJoyeriaController::class, 'storeCategoria']);
+    Route::put('/catalogos-joyeria/categorias/{id}', [CatalogoJoyeriaController::class, 'updateCategoria']);
+    Route::delete('/catalogos-joyeria/categorias/{id}', [CatalogoJoyeriaController::class, 'destroyCategoria']);
+
+    Route::get('/catalogos-joyeria/clasificaciones', [CatalogoJoyeriaController::class, 'getClasificaciones']);
+    Route::post('/catalogos-joyeria/clasificaciones', [CatalogoJoyeriaController::class, 'storeClasificacion']);
+    Route::put('/catalogos-joyeria/clasificaciones/{id}', [CatalogoJoyeriaController::class, 'updateClasificacion']);
+    Route::delete('/catalogos-joyeria/clasificaciones/{id}', [CatalogoJoyeriaController::class, 'destroyClasificacion']);
+
+    Route::get('/ventas-electronicos/siguiente-folio', [VentaElectronicosController::class, 'siguienteFolio']);
+    Route::get('/ventas-electronicos/nota/{folio}', [VentaElectronicosController::class, 'buscarNota']);
+    Route::post('/ventas-electronicos/procesar', [VentaElectronicosController::class, 'procesarVenta']);
 });
 
 Route::get('/reportes/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');

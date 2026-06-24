@@ -16,7 +16,9 @@ class MovimientosCaja extends Model
         "user_id",
         "tipo",
         "monto",
-        "denominacion"
+        "denominacion",
+        "referencia_id",
+        "observaciones"
     ];
 
     protected $casts = [
