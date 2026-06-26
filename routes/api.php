@@ -98,6 +98,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/ventas-electronicos/siguiente-folio', [VentaElectronicosController::class, 'siguienteFolio']);
     Route::get('/ventas-electronicos/nota/{folio}', [VentaElectronicosController::class, 'buscarNota']);
     Route::post('/ventas-electronicos/procesar', [VentaElectronicosController::class, 'procesarVenta']);
+
+    Route::post('/caja/entrada-manual', [VentaJoyeriaController::class, 'entradaManual']);
 });
 
 Route::get('/reportes/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');

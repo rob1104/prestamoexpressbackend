@@ -37,6 +37,26 @@ class VentaJoyeriaController extends Controller
         ]);
     }
 
+    public function entradaManual(Request $request)
+    {
+        $request->validate([
+            'monto' => 'required|numeric|min:0.01',
+            'denominaciones' => 'required'
+        ]);
+
+        MovimientosCaja::create([
+            'caja_id'      => 1, // Tu ID de caja actual
+            'user_id'      => Auth::id() ?? 1,
+            'referencia_id'=> null,
+            'tipo'         => 'ENTRADA',
+            'monto'        => $request->monto,
+            'denominacion' => $request->denominaciones,
+            'observaciones'=> $request->observaciones
+        ]);
+
+        return response()->json(['message' => 'Entrada registrada con éxito']);
+    }
+
     public function siguienteFolio()
     {
         // Busca el ID más alto en la tabla y le suma 1. Si no hay registros, devuelve 1.
@@ -152,14 +172,17 @@ class VentaJoyeriaController extends Controller
             ]);
 
             // 5. Afectar el Arqueo de la Caja (Entrada de Dinero real)
+            $esCompra = ($request->tipo_operacion === 'COMPRA');
+            $tipoMovimiento = $esCompra ? 'SALIDA' : 'ENTRADA';
+
             if ($importe_cobrado > 0 && $efectivo > 0) {
                 MovimientosCaja::create([
                     'caja_id'      => $caja_id,
                     'user_id'      => $user_id,
                     'referencia_id'=> $ventaId,
-                    'tipo'         => 'ENTRADA',
+                    'tipo'         => $tipoMovimiento,
                     'monto'        => $efectivo, // Solo registramos el efectivo en la caja física
-                    'observaciones'=> "Venta de Joyería Folio: $ventaId",
+                    'observaciones'=> ($esCompra ? "Compra de Joyería " : "Venta de Joyería ") . "Folio: $ventaId",
                     'denominacion' => $request->denominaciones,
                 ]);
             }
