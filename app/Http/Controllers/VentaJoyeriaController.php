@@ -45,7 +45,7 @@ class VentaJoyeriaController extends Controller
         ]);
 
         MovimientosCaja::create([
-            'caja_id'      => 1, // Tu ID de caja actual
+            'caja_id'      => 1,
             'user_id'      => Auth::id() ?? 1,
             'referencia_id'=> null,
             'tipo'         => 'ENTRADA',
@@ -145,8 +145,6 @@ class VentaJoyeriaController extends Controller
                     'updated_at'    => $hoy
                 ];
 
-                // Opcional: Aquí puedes agregar tu lógica de descontar inventario
-                // DB::table('inventario_joyeria')->where('...')->decrement('cantidad', $item['cantidad']);
             }
             DB::table('ventas_joyeria_detalle')->insert($detalles);
 

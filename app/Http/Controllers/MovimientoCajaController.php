@@ -3,11 +3,27 @@
 namespace App\Http\Controllers;
 
 use App\Models\MovimientosCaja;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class MovimientoCajaController extends Controller
 {
+
+    // Verifica si la caja ya fue abierta en la fecha actual
+    public function checkApertura()
+    {
+        $hoy = Carbon::today();
+
+        $aperturaExistente = MovimientosCaja::where('observaciones', 'Fondo de caja inicial (Apertura de turno)')
+            ->whereDate('created_at', $hoy)
+            ->exists();
+
+        return response()->json([
+            'apertura_realizada' => $aperturaExistente
+        ]);
+    }
+
     public function registrarEfectivo(Request $request, $boletaId)
     {
         $request->validate([
@@ -37,5 +53,31 @@ class MovimientoCajaController extends Controller
                 'message' => 'Error al registrar en caja: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    // Guarda el fondo de caja inicial del turno
+    public function registrarApertura(Request $request)
+    {
+        // 1. Validamos que nos envíen la información correcta
+        $request->validate([
+            'monto' => 'required|numeric|min:0',
+            'denominaciones' => 'required|string'
+        ]);
+
+        // 2. Registramos el movimiento especial de APERTURA
+        MovimientosCaja::create([
+            'caja_id'      => 1,
+            'user_id'      => Auth::id() ?? 1,
+            'referencia_id'=> null,
+            'tipo'         => 'ENTRADA',
+            'monto'        => $request->monto,
+            'denominacion' => $request->denominaciones,
+            'observaciones'=> 'Fondo de caja inicial (Apertura de turno)'
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Apertura de caja registrada correctamente.'
+        ]);
     }
 }

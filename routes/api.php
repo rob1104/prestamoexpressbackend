@@ -100,6 +100,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/ventas-electronicos/procesar', [VentaElectronicosController::class, 'procesarVenta']);
 
     Route::post('/caja/entrada-manual', [VentaJoyeriaController::class, 'entradaManual']);
+    Route::post('/caja/apertura', [MovimientoCajaController::class, 'registrarApertura']);
+    Route::get('/caja/check-apertura', [MovimientoCajaController::class, 'checkApertura']);
 });
 
 Route::get('/reportes/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');
