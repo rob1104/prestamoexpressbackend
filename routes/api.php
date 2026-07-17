@@ -13,6 +13,8 @@ use App\Http\Controllers\ParametrosController;
 use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\ReporteCarteraController;
 use App\Http\Controllers\ReporteFlujoCajaController;
+use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VentaElectronicosController;
@@ -102,7 +104,24 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/caja/entrada-manual', [VentaJoyeriaController::class, 'entradaManual']);
     Route::post('/caja/apertura', [MovimientoCajaController::class, 'registrarApertura']);
     Route::get('/caja/check-apertura', [MovimientoCajaController::class, 'checkApertura']);
+
+
+    Route::get('/reportes/boletas-vencidas', [ReportesController::class, 'boletasVencidas']);
+    Route::get('/reportes/boletas-vencidas/url-firmada-pdf', [ReportesController::class, 'boletasVencidasUrlFirmadaPdf']);
+    //Route::get('/reportes/boletas-vencidas/url-firmada-excel', [ReportesController::class, 'boletasVencidasUrlFirmadaExcel']);
+    // Reporte de Ventas Detallado
+    Route::get('/reportes/ventas-detallado', [ReportesController::class, 'ventasDetallado']);
+    Route::get('/reportes/ventas-detallado/url-firmada-pdf', [ReportesController::class, 'ventasUrlFirmadaPdf']);
+    Route::get('/reportes/ventas-detallado/url-firmada-excel', [ReportesController::class, 'ventasUrlFirmadaExcel']);
+
+    Route::get('/dashboard/resumen', [DashboardController::class, 'resumenDiario']);
 });
 
 Route::get('/reportes/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');
 Route::get('/reportes/flujo-caja/pdf', [ReporteFlujoCajaController::class, 'generarPDF'])->name('reporte.flujocaja.pdf')->middleware('signed');
+
+Route::get('/exportar/boletas-vencidas/pdf', [ReportesController::class, 'exportarBoletasPdf'])->name('reportes.boletas-vencidas.pdf')->middleware('signed');
+Route::get('/exportar/boletas-vencidas/excel', [ReportesController::class, 'exportarBoletasExcel'])->name('reportes.boletas-vencidas.excel')->middleware('signed');
+// Descargas Ventas
+Route::get('/exportar/ventas/pdf', [ReportesController::class, 'exportarVentasPdf'])->name('reportes.ventas.pdf')->middleware('signed');
+Route::get('/exportar/ventas/excel', [ReportesController::class, 'exportarVentasExcel'])->name('reportes.ventas.excel')->middleware('signed');
