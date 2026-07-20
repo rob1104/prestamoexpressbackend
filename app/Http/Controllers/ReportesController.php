@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Boleta;
+use App\Models\CierreDiario;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -169,6 +170,56 @@ class ReportesController extends Controller
     public function ventasUrlFirmadaExcel(Request $request)
     {
         $url = URL::temporarySignedRoute('reportes.ventas.excel', now()->addMinutes(30), $request->all());
+        return response()->json(['url' => $url]);
+    }
+    
+    private function getDatosCierreDiario(Request $request)
+    {
+        $fechaInicio = $request->input('fecha_inicio', now()->toDateString());
+        $fechaFin = $request->input('fecha_fin', now()->toDateString());
+
+        $cierres = CierreDiario::whereBetween('fecha_cierre', [$fechaInicio, $fechaFin])
+            ->orderBy('fecha_cierre', 'desc')
+            ->get();
+
+        $totales = [
+            'prestamos_nuevos' => $cierres->sum('prestamos_nuevos'),
+            'capital_recuperado' => $cierres->sum('capital_recuperado'),
+            'interes_recuperado' => $cierres->sum('interes_recuperado'),
+            'recargos_cobrados' => $cierres->sum('recargos_cobrados'),
+            'ventas_joyeria' => $cierres->sum('ventas_joyeria'),
+            'ventas_electronicos' => $cierres->sum('ventas_electronicos'),
+            'entradas_otros' => $cierres->sum('entradas_otros'),
+            'salidas_otros' => $cierres->sum('salidas_otros'),
+        ];
+
+        return [
+            'cierres' => $cierres,
+            'totales' => $totales
+        ];
+    }
+
+    public function cierreDiario(Request $request)
+    {
+        $datos = $this->getDatosCierreDiario($request);
+        return response()->json($datos);
+    }
+
+    public function exportarCierreDiarioPdf(Request $request)
+    {
+        $datos = $this->getDatosCierreDiario($request);
+        $pdf = Pdf::loadView('reportes.cierre-diario', [
+            'cierres' => $datos['cierres'],
+            'totales' => $datos['totales'],
+            'filtros' => $request->all(),
+            'fechaImpresion' => now()->format('d/m/Y H:i:s')
+        ]);
+        return $pdf->download('Reporte_Cierre_Diario.pdf');
+    }
+
+    public function cierreDiarioUrlFirmadaPdf(Request $request)
+    {
+        $url = URL::temporarySignedRoute('reportes.cierre-diario.pdf', now()->addMinutes(30), $request->all());
         return response()->json(['url' => $url]);
     }
     

@@ -97,13 +97,46 @@ class CierreService
             ->where('estatus', 'aplicado')
             ->sum('cantidad');
 
-        // 5. Guardar el registro maestro del día
+        // 5. Ventas de Joyería y Electrónicos
+        $ventasJoyeria = DB::table('ventas_joyeria_pagos')
+            ->whereDate('fecha_pago', $fecha)
+            ->where('estatus', 'A')
+            ->sum('importe');
+
+        $ventasElectronicos = DB::table('ventas_electronicos_pagos')
+            ->whereDate('fecha_pago', $fecha)
+            ->where('estatus', 'A')
+            ->sum('importe');
+
+        // 6. Entradas y Salidas varias de Caja
+        // Excluimos las que tengan referencia (para no duplicar ventas/préstamos si es que las registran ahí)
+        $entradasOtros = DB::table('movimientos_cajas')
+            ->whereDate('created_at', $fecha)
+            ->where('tipo', 'ENTRADA')
+            ->whereNull('referencia_id')
+            ->sum('monto');
+
+        $salidasOtros = DB::table('movimientos_cajas')
+            ->whereDate('created_at', $fecha)
+            ->where('tipo', 'SALIDA')
+            ->whereNull('referencia_id')
+            ->sum('monto');
+
+        // 7. Guardar el registro maestro del día
         CierreDiario::create([
             'fecha_cierre' => $fecha->format('Y-m-d'),
             'prestamos_nuevos' => $stats->prestamos_nuevos ?? 0,
             'capital_recuperado' => $stats->capital_recuperado ?? 0,
+            'interes_cobrado' => $stats->interes_recuperado ?? 0,
             'interes_recuperado' => $stats->interes_recuperado ?? 0,
-            'user_id' => auth()->id(),
+            'recargos_cobrados' => $stats->recargos_cobrados ?? 0,
+            'entradas_otros' => $entradasOtros,
+            'salidas_otros' => $salidasOtros,
+            'ventas_joyeria' => $ventasJoyeria,
+            'ventas_electronicos' => $ventasElectronicos,
+            'boletas_nuevas' => $stats->cant_boletas ?? 0,
+            'boletas_liquidadas' => $stats->cant_liquidaciones ?? 0,
+            'user_id' => auth()->id() ?? 1,
         ]);
     }
 }

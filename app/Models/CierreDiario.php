@@ -14,7 +14,15 @@ class CierreDiario extends Model
         'fecha_cierre',
         'prestamos_nuevos',
         'capital_recuperado',
+        'interes_cobrado',
         'interes_recuperado',
+        'recargos_cobrados',
+        'entradas_otros',
+        'salidas_otros',
+        'ventas_joyeria',
+        'ventas_electronicos',
+        'boletas_nuevas',
+        'boletas_liquidadas',
         'user_id',
     ];
 

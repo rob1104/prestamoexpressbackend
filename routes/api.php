@@ -63,7 +63,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/cartera', [ReporteCarteraController::class, 'generarReporteCartera'])->name('reportes.cartera');
         Route::get('/cartera/url-firmada', [ReporteCarteraController::class, 'generaUrlFirmadaReporteCartera']);
         Route::get('/flujo-caja', [ReporteFlujoCajaController::class, 'generarFlujoCaja'])->name('reportes.flujocaja');
-        Route::get('/flujo-caja/url-firmada', [ReporteFlujoCajaController::class, 'generarUrlFirmada']);    });
+        Route::get('/flujo-caja/url-firmada', [ReporteFlujoCajaController::class, 'generarUrlFirmada']);
+
+        Route::get('/cierre-diario', [ReportesController::class, 'cierreDiario']);
+        Route::get('/cierre-diario/url-firmada-pdf', [ReportesController::class, 'cierreDiarioUrlFirmadaPdf']);
+    });
 
     Route::get('/promociones', [PromocionController::class, 'index'])->name('promociones.index');
     Route::post('/boletas', [BoletaController::class, 'store'])->name('boletas.store');
@@ -125,3 +129,4 @@ Route::get('/exportar/boletas-vencidas/excel', [ReportesController::class, 'expo
 // Descargas Ventas
 Route::get('/exportar/ventas/pdf', [ReportesController::class, 'exportarVentasPdf'])->name('reportes.ventas.pdf')->middleware('signed');
 Route::get('/exportar/ventas/excel', [ReportesController::class, 'exportarVentasExcel'])->name('reportes.ventas.excel')->middleware('signed');
+Route::get('/exportar/cierre-diario/pdf', [ReportesController::class, 'exportarCierreDiarioPdf'])->name('reportes.cierre-diario.pdf')->middleware('signed');
