@@ -15,10 +15,14 @@ use App\Http\Controllers\ReporteCarteraController;
 use App\Http\Controllers\ReporteFlujoCajaController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FlujoCajaController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VentaElectronicosController;
 use App\Http\Controllers\VentaJoyeriaController;
+use App\Http\Controllers\DatabaseAdminController;
+use App\Http\Controllers\GastoController;
+use App\Http\Controllers\FlujoConceptoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -108,7 +112,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/ventas-electronicos/nota/{folio}', [VentaElectronicosController::class, 'buscarNota']);
     Route::post('/ventas-electronicos/procesar', [VentaElectronicosController::class, 'procesarVenta']);
 
-    Route::post('/caja/entrada-manual', [VentaJoyeriaController::class, 'entradaManual']);
+    Route::get('/caja/conceptos', [FlujoCajaController::class, 'getConceptos']);
+    Route::apiResource('/flujo-conceptos', FlujoConceptoController::class);
+    Route::post('/caja/entrada-manual', [FlujoCajaController::class, 'registrarEntrada']);
+    Route::post('/caja/salida-manual', [FlujoCajaController::class, 'registrarSalida']);
+    Route::get('/caja/movimiento/{id}/ticket-url', [FlujoCajaController::class, 'ticketUrlFirmada']);
     Route::post('/caja/apertura', [MovimientoCajaController::class, 'registrarApertura']);
     Route::get('/caja/check-apertura', [MovimientoCajaController::class, 'checkApertura']);
 
@@ -122,6 +130,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/reportes/ventas-detallado/url-firmada-excel', [ReportesController::class, 'ventasUrlFirmadaExcel']);
 
     Route::get('/dashboard/resumen', [DashboardController::class, 'resumenDiario']);
+
+    Route::prefix('/database')->group(function () {
+        Route::get('/backups', [DatabaseAdminController::class, 'index'])->name('database.backups.index');
+        Route::post('/backups', [DatabaseAdminController::class, 'store'])->name('database.backups.store');
+        Route::delete('/backups/{filename}', [DatabaseAdminController::class, 'destroy'])->name('database.backups.destroy');
+        Route::get('/backups/{filename}/download', [DatabaseAdminController::class, 'download'])->name('database.backups.download');
+        Route::post('/backups/restore', [DatabaseAdminController::class, 'restore'])->name('database.backups.restore');
+        Route::post('/reset', [DatabaseAdminController::class, 'reset'])->name('database.reset');
+    });
 });
 
 Route::get('/reportes/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');
@@ -129,6 +146,7 @@ Route::get('/reportes/flujo-caja/pdf', [ReporteFlujoCajaController::class, 'gene
 
 Route::get('/exportar/boletas-vencidas/pdf', [ReportesController::class, 'exportarBoletasPdf'])->name('reportes.boletas-vencidas.pdf')->middleware('signed');
 Route::get('/exportar/boletas-vencidas/excel', [ReportesController::class, 'exportarBoletasExcel'])->name('reportes.boletas-vencidas.excel')->middleware('signed');
+Route::get('/caja/movimiento/{id}/ticket', [FlujoCajaController::class, 'imprimirTicket'])->name('caja.movimiento.ticket')->middleware('signed');
 // Descargas Ventas
 Route::get('/exportar/ventas/pdf', [ReportesController::class, 'exportarVentasPdf'])->name('reportes.ventas.pdf')->middleware('signed');
 Route::get('/exportar/ventas/excel', [ReportesController::class, 'exportarVentasExcel'])->name('reportes.ventas.excel')->middleware('signed');

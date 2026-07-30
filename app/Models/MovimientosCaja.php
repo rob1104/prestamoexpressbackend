@@ -18,7 +18,14 @@ class MovimientosCaja extends Model
         "monto",
         "denominacion",
         "referencia_id",
-        "observaciones"
+        "observaciones",
+        "flujo_concepto_id",
+        "recibido_por",
+        "entregado_por",
+        "autorizado_por",
+        "adicional_1",
+        "adicional_2",
+        "es_pago_relacionado"
     ];
 
     protected $casts = [
@@ -32,6 +39,10 @@ class MovimientosCaja extends Model
 
     public function caja() {
         return $this->belongsTo(Caja::class);
+    }
+
+    public function conceptoFlujo() {
+        return $this->belongsTo(FlujoConcepto::class, 'flujo_concepto_id');
     }
 
     public function getActivitylogOptions(): LogOptions
