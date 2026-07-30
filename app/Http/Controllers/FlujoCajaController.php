@@ -23,6 +23,25 @@ class FlujoCajaController extends Controller
         ]);
     }
 
+    public function historial(Request $request)
+    {
+        $query = MovimientosCaja::with(['caja', 'conceptoFlujo'])->orderBy('id', 'desc');
+
+        if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
+            $query->whereBetween('created_at', [
+                $request->fecha_inicio . ' 00:00:00',
+                $request->fecha_fin . ' 23:59:59'
+            ]);
+        }
+
+        $movimientos = $query->paginate(50);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $movimientos
+        ]);
+    }
+
     public function registrarEntrada(Request $request)
     {
         $request->validate([

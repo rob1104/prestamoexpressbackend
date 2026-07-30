@@ -113,6 +113,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/ventas-electronicos/procesar', [VentaElectronicosController::class, 'procesarVenta']);
 
     Route::get('/caja/conceptos', [FlujoCajaController::class, 'getConceptos']);
+    Route::get('/caja/movimientos', [FlujoCajaController::class, 'historial']);
     Route::apiResource('/flujo-conceptos', FlujoConceptoController::class);
     Route::post('/caja/entrada-manual', [FlujoCajaController::class, 'registrarEntrada']);
     Route::post('/caja/salida-manual', [FlujoCajaController::class, 'registrarSalida']);
