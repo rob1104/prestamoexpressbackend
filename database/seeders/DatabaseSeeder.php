@@ -17,7 +17,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             CotizacionOroSeeder::class,
-            ParametrosSeeder::class
+            ParametrosSeeder::class,
+            FlujoConceptosSeeder::class
         ]);
     }
 }
