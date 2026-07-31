@@ -100,9 +100,9 @@
 <div class="nTexto fw-bold" style="line-height: 14px">
     CONTRATO DE MUTUO CON INTERÉS Y GARANTÍA PRENDARIA (PRÉSTAMO), que celebran: <span>{{$sucursal->razon_social}},</span>
     EL PROVEEDOR, con domicilio <span>{{$sucursal->calle_num}}, {{$sucursal->colonia}}</span> <span>{{$sucursal->municipio}}</span>, <span>{{$sucursal->estado}}</span>, MEXICO. C.P. <span>{{$sucursal->codigo_postal}}</span>, RFC: <span>{{$sucursal->rfc}}</span>,
-    Tel: <span>{{$sucursal->telefono_1}}</span>, Correo: <span>{{$sucursal->email}}</span>, en caso de persona moral: representado por : Martha Edith Muñéz Garza y EL
+    Tel: <span>{{$sucursal->telefono_1}}</span>, Correo: <span>{{strtolower($sucursal->email)}}</span>, en caso de persona moral: representado por : Martha Edith Muñéz Garza y EL
     CONSUMIDOR <span>{{$boleta->cliente->nombre . " " . $boleta->cliente->apellido_paterno . " " . $boleta->cliente->apellido_materno}}</span>, que se identifica con INE número: <span>{{$boleta->cliente->identificacion ?? 'NO PROPORCIONA'}}</span>, con domicilio
-    <span>{{$boleta->cliente->direccion ?? 'NO PROPORCIONA'}} {{$boleta->cliente->colonia ?? ''}}</span> con No. de teléfono: <span>{{$boleta->cliente->telefono1 ?? 'NO PROPORCIONA'}}</span> y con correo: <span>{{$boleta->cliente->email ?? 'NO PROPORCIONA'}}</span>.
+    <span>{{$boleta->cliente->callenum ?? 'NO PROPORCIONA'}} C.P. {{$boleta->cliente->codPostal ?? ''}} {{$boleta->cliente->colonia ?? ''}} {{$boleta->cliente->municipio ?? ''}}, {{$boleta->cliente->estado ?? ''}}</span> con No. de teléfono: <span>{{$boleta->cliente->telefono1 ?? 'NO PROPORCIONA'}}</span> y con correo: <span>{{ $boleta->cliente->email ? strtolower($boleta->cliente->email) : 'NO PROPORCIONA' }}</span>.
     Quién designa como cotitular a <span>{{$boleta->cliente->cotitular ?? 'NO PROPORCIONA'}}</span>; y
     beneficiario a <span>{{$boleta->cliente->beneficiario ?? 'NO PROPORCIONA'}}</span> solo para efectos de este contrato.
 </div>
@@ -154,9 +154,9 @@
             Plazo del préstamos:
             <span style="text-decoration: underline;">
                             @if ($boleta->tipo_prestamo == 'pagos')
-                    <span>{{$boleta->meses}} MESES</span>
+                    <span>{{$boleta->meses * 30}} DÍAS</span>
                 @else
-                    <span>1 MES</span>
+                    <span>30 DÍAS</span>
                 @endif
                         </span>. Total de refrendos aplicables
             <span class="text-decoration-underline">
@@ -169,7 +169,7 @@
             Su pago será
             <span style="text-decoration: underline;">
                             <span>{{ strtoupper($nombrePeriodo) }}</span>
-                        </span>. Métodos del pago aceptado: Efectivo. En caso de que el vencimiento sea en
+                        </span>. Métodos de pago aceptado: Efectivo, tarjetas de crédito y débito, transferencias. En caso de que el vencimiento sea en
             un día inhábil, se considerará el día hábil siguiente.
         </td>
     </tr>
@@ -245,7 +245,7 @@
                     <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0" colspan="5">DESCRIPCIÓN DE LA PRENDA</td>
                 </tr>
                 <tr>
-                    <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0">TIPO DE PRENDA</td>
+                    <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0">DESCRIPCIÓN GENÉRICA</td>
                     <td class="normalTd" style="background-color: #C0C0C0">CARACTERÍSTICAS</td>
                     <td class="normalTd" style="background-color: #C0C0C0">AVALÚO</td>
                     <td class="normalTd" style="background-color: #C0C0C0">PRÉSTAMO</td>
@@ -256,8 +256,8 @@
                         @foreach ($boleta->partidas as $d)
                             <div style="text-align: left; padding-left: 5px; margin-bottom: 2px;">
                                 <b style="color: #1e3a8a;">
-                                    {{ strtoupper($d->subtipo) }}
-                                    ({{ $d->gramos_cantidad }}{{ $d->tipo == 'moneda' ? ' pzs' : ' gr' }}):
+                                    {{ $d->gramos_cantidad }}{{ $d->tipo == 'moneda' ? ' pzs' : ' gr' }}
+                                    {{ strtoupper($d->subtipo) }}:
                                 </b>
                                 {{ strtoupper($d->descripcion) }}
                             </div>
@@ -279,6 +279,10 @@
         <td class="normalTd" colspan="3">100%</td>
     </tr>
     <tr>
+        <td class="normalTd" colspan="2">Fecha de inicio de comercialización:</td>
+        <td class="normalTd" colspan="3"><span>{{ \Carbon\Carbon::parse($boleta->fecha_vencimiento)->addDay()->translatedFormat('d M Y') }}</span></td>
+    </tr>
+    <tr>
         <td class="normalTd" colspan="2">El monto del préstamo se realizará en <span class="text-decoration-underline">EFECTIVO</span>:</td>
         <td class="normalTd" colspan="3">
             Efectivo o a la cuenta bancaria del Consumidor al número
@@ -294,13 +298,13 @@
         <td class="normalTd" colspan="5">Estos conceptos causarán el pago del Impuesto al valor agregado (IVA) a la tasa del 16 %</td>
     </tr>
     <tr>
-        <td class="normalTd" colspan="5">*El procedimiento para desempeño, refrendo, finiquito y reclamo del remanente se encuentra descrito en el contrato.</td>
+        <td colspan="5" style="border: none; text-align: left; padding: 5px;">*El procedimiento para desempeño, refrendo, finiquito y reclamo del remanente se encuentra descrito en el contrato.</td>
     </tr>
     <tr>
         <td class="normalTd" colspan="5">
             Dudas, aclaraciones y reclamaciones:
             * Para cualquier duda, aclaración o reclamación, favor de dirigirse a: {{$sucursal->calle_num, $sucursal->colonia}}, CP {{$sucursal->codigo_postal}}, {{$sucursal->municipio}},
-            {{$sucursal->estado}}. Telefono: {{$sucursal->telefono_1}}, correo electrónico: {{$sucursal->email}}; Horario: {{$sucursal->horario_atencion}}.
+            {{$sucursal->estado}}. Telefono: {{$sucursal->telefono_1}}, correo electrónico: {{strtolower($sucursal->email)}}; Horario: {{$sucursal->horario_atencion}}.
             <br>
             <div>* O en su caso a PROFECO a los teléfonos: 55 68 8722 o al 800 468 8722, Página de internet: www.gob.mx/profeco</div>
         </td>
