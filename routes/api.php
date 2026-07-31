@@ -23,22 +23,24 @@ use App\Http\Controllers\VentaJoyeriaController;
 use App\Http\Controllers\DatabaseAdminController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\FlujoConceptoController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    $user = $request->user();
-    return [
-        'id' => $user->id,
-        'name' => $user->name,
-        'email' => $user->email,
-        'roles' => $user->getRoleNames(),
-        'permissions' => $user->getAllPermissions()->pluck('name'),
-        'active' => $user->active
-    ];
-});
-
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/user', function (Request $request) {
+        $user = $request->user();
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'active' => $user->active
+        ]);
+    });
+
+    Route::put('/profile', [ProfileController::class, 'update']);
     Route::get('/roles/names', [RoleController::class, 'getRolesName'])->name('roles.names');
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-log');
     Route::apiResource('roles', RoleController::class);
@@ -74,6 +76,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
         Route::post('/detalles-movimientos/preview', [App\Http\Controllers\ReporteDetallesMovimientosController::class, 'preview']);
         Route::post('/detalles-movimientos/url-firmada-pdf', [App\Http\Controllers\ReporteDetallesMovimientosController::class, 'urlFirmadaPdf']);
+    });
+
+    Route::prefix('/historial-cliente')->group(function() {
+        Route::get('/buscar', [App\Http\Controllers\HistorialClienteController::class, 'buscar']);
+        Route::get('/boleta/{id}', [App\Http\Controllers\HistorialClienteController::class, 'obtenerBoleta']);
+        Route::get('/estadisticas/{clienteId}', [App\Http\Controllers\HistorialClienteController::class, 'historiaGeneral']);
+        Route::get('/boleta/{folio}/pdf-url', [App\Http\Controllers\HistorialClienteController::class, 'reportePdfUrl']);
     });
 
     Route::get('/promociones', [PromocionController::class, 'index'])->name('promociones.index');
@@ -119,9 +128,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/caja/salida-manual', [FlujoCajaController::class, 'registrarSalida']);
     Route::get('/caja/movimiento/{id}/ticket-url', [FlujoCajaController::class, 'ticketUrlFirmada']);
     Route::post('/caja/apertura', [MovimientoCajaController::class, 'registrarApertura']);
-    Route::get('/caja/check-apertura', [MovimientoCajaController::class, 'checkApertura']);
-
-
+    Route::get('reportes/flujo-caja', [ReportesController::class, 'flujoCaja']);
+    Route::get('reportes/boletas-diarias', [ReportesController::class, 'boletasDiarias']);
+    Route::get('reportes/boletas-diarias/url-firmada-pdf', [ReportesController::class, 'urlFirmadaBoletasDiariasPDF']);
     Route::get('/reportes/boletas-vencidas', [ReportesController::class, 'boletasVencidas']);
     Route::get('/reportes/boletas-vencidas/url-firmada-pdf', [ReportesController::class, 'boletasVencidasUrlFirmadaPdf']);
     //Route::get('/reportes/boletas-vencidas/url-firmada-excel', [ReportesController::class, 'boletasVencidasUrlFirmadaExcel']);
@@ -129,6 +138,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/reportes/ventas-detallado', [ReportesController::class, 'ventasDetallado']);
     Route::get('/reportes/ventas-detallado/url-firmada-pdf', [ReportesController::class, 'ventasUrlFirmadaPdf']);
     Route::get('/reportes/ventas-detallado/url-firmada-excel', [ReportesController::class, 'ventasUrlFirmadaExcel']);
+
+    // Reporte de Compras Detallado
+    Route::get('/reportes/compras-detallado', [ReportesController::class, 'comprasDetallado']);
+    Route::get('/reportes/compras-detallado/url-firmada-pdf', [ReportesController::class, 'comprasUrlFirmadaPdf']);
+    Route::get('/reportes/compras-detallado/url-firmada-excel', [ReportesController::class, 'comprasUrlFirmadaExcel']);
 
     Route::get('/dashboard/resumen', [DashboardController::class, 'resumenDiario']);
 
@@ -144,6 +158,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 Route::get('/reportes/cartera/pdf', [ReporteCarteraController::class, 'generarPDF'])->name('reportes.cartera.pdf')->middleware('signed');
 Route::get('/reportes/flujo-caja/pdf', [ReporteFlujoCajaController::class, 'generarPDF'])->name('reporte.flujocaja.pdf')->middleware('signed');
+Route::get('/reportes/boletas-diarias/pdf', [ReportesController::class, 'reporteBoletasDiariasPDF'])->name('reportes.boletas_diarias_pdf')->middleware('signed');
 
 Route::get('/exportar/boletas-vencidas/pdf', [ReportesController::class, 'exportarBoletasPdf'])->name('reportes.boletas-vencidas.pdf')->middleware('signed');
 Route::get('/exportar/boletas-vencidas/excel', [ReportesController::class, 'exportarBoletasExcel'])->name('reportes.boletas-vencidas.excel')->middleware('signed');
@@ -151,5 +166,11 @@ Route::get('/caja/movimiento/{id}/ticket', [FlujoCajaController::class, 'imprimi
 // Descargas Ventas
 Route::get('/exportar/ventas/pdf', [ReportesController::class, 'exportarVentasPdf'])->name('reportes.ventas.pdf')->middleware('signed');
 Route::get('/exportar/ventas/excel', [ReportesController::class, 'exportarVentasExcel'])->name('reportes.ventas.excel')->middleware('signed');
+
+// Descargas Compras
+Route::get('/exportar/compras/pdf', [ReportesController::class, 'exportarComprasPdf'])->name('reportes.compras.pdf')->middleware('signed');
+Route::get('/exportar/compras/excel', [ReportesController::class, 'exportarComprasExcel'])->name('reportes.compras.excel')->middleware('signed');
 Route::get('/exportar/cierre-diario/pdf', [ReportesController::class, 'exportarCierreDiarioPdf'])->name('reportes.cierre-diario.pdf')->middleware('signed');
 Route::get('/exportar/detalles-movimientos/pdf', [App\Http\Controllers\ReporteDetallesMovimientosController::class, 'generarPDF'])->name('reportes.detalles-movimientos.pdf')->middleware('signed');
+
+Route::get('/historial-cliente/boleta/{folio}/pdf', [App\Http\Controllers\HistorialClienteController::class, 'reportePdf'])->name('historial.pdf')->middleware('signed');

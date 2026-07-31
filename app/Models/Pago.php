@@ -22,4 +22,9 @@ class Pago extends Model
         'totalRecibido',
         'caja_id',
     ];
+
+    public function boleta()
+    {
+        return $this->belongsTo(Boleta::class, 'boleta_id');
+    }
 }

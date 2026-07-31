@@ -41,12 +41,30 @@ class DashboardController extends Controller
             ->whereDate('fecha_vencimiento', '<', $hoy)
             ->count();
 
+        // 5. Salidas de Caja Hoy
+        $egresosCaja = MovimientosCaja::where('tipo', 'SALIDA')
+            ->whereDate('created_at', $hoy)
+            ->sum('monto');
+
+        // 6. Cartera Activa (Total prestado en la calle)
+        $carteraActiva = Boleta::where('estatus', 'PE')->sum('prestamo');
+
+        // 7. Clientes Nuevos Hoy
+        $clientesNuevos = \App\Models\Cliente::whereDate('created_at', $hoy)->count();
+
+        // 8. Intereses Cobrados Hoy
+        $interesesCobrados = \App\Models\Pago::whereDate('fecha', $hoy)->sum('interestotal');
+
         return response()->json([
             'ingresos_caja' => $ingresosCaja,
             'empenos_count' => $empenosHoyCount,
             'empenos_monto' => $empenosHoyMonto,
             'ventas_total' => $ventasHoyTotal,
-            'boletas_vencidas' => $boletasVencidasCount
+            'boletas_vencidas' => $boletasVencidasCount,
+            'egresos_caja' => $egresosCaja,
+            'cartera_activa' => $carteraActiva,
+            'clientes_nuevos' => $clientesNuevos,
+            'intereses_cobrados' => $interesesCobrados
         ]);
     }
 }

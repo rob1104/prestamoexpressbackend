@@ -99,10 +99,10 @@
 </div>
 <div class="nTexto fw-bold" style="line-height: 14px">
     CONTRATO DE MUTUO CON INTERÉS Y GARANTÍA PRENDARIA (PRÉSTAMO), que celebran: <span>{{$sucursal->razon_social}},</span>
-    EL PROVEEDOR, con domicilio <span>{{$sucursal->calle_num}}, {{$sucursal->colonia}}</span> <span>{{$sucursal->municipio}}</span>, <span>{{$sucursal->estado}}</span>, MEXICO. C.P. <span>{{$sucursal->codigo_postal}}</span>, RFC: <span>{{$sucursal->rfc}}</span>,
-    Tel: <span>{{$sucursal->telefono_1}}</span>, Correo: <span>{{strtolower($sucursal->email)}}</span>, en caso de persona moral: representado por : Martha Edith Muñéz Garza y EL
+    EL PROVEEDOR, con domicilio <span>{{$sucursal->calle_num}} - {{$sucursal->colonia}} - C.P. {{$sucursal->codigo_postal}} - {{$sucursal->municipio}} {{$sucursal->estado}} MEXICO</span>. RFC: <span>{{$sucursal->rfc}}</span>,
+    Tel: <span>{{$sucursal->telefono_1}}</span>, Página de internet: <span>(no tenemos)</span>, en caso de persona moral: representado por : Martha Edith Muñéz Garza y EL
     CONSUMIDOR <span>{{$boleta->cliente->nombre . " " . $boleta->cliente->apellido_paterno . " " . $boleta->cliente->apellido_materno}}</span>, que se identifica con INE número: <span>{{$boleta->cliente->identificacion ?? 'NO PROPORCIONA'}}</span>, con domicilio
-    <span>{{$boleta->cliente->callenum ?? 'NO PROPORCIONA'}} C.P. {{$boleta->cliente->codPostal ?? ''}} {{$boleta->cliente->colonia ?? ''}} {{$boleta->cliente->municipio ?? ''}}, {{$boleta->cliente->estado ?? ''}}</span> con No. de teléfono: <span>{{$boleta->cliente->telefono1 ?? 'NO PROPORCIONA'}}</span> y con correo: <span>{{ $boleta->cliente->email ? strtolower($boleta->cliente->email) : 'NO PROPORCIONA' }}</span>.
+    <span>{{$boleta->cliente->callenum ?? 'NO PROPORCIONA'}} - {{$boleta->cliente->colonia ?? ''}} - C.P. {{$boleta->cliente->codPostal ?? ''}} - {{$boleta->cliente->municipio ?? ''}} {{$boleta->cliente->estado ?? ''}}</span> con No. de teléfono: <span>{{$boleta->cliente->telefono1 ?? 'NO PROPORCIONA'}}</span> y con correo: <span>{{ $boleta->cliente->email ? strtolower($boleta->cliente->email) : 'NO PROPORCIONA' }}</span>.
     Quién designa como cotitular a <span>{{$boleta->cliente->cotitular ?? 'NO PROPORCIONA'}}</span>; y
     beneficiario a <span>{{$boleta->cliente->beneficiario ?? 'NO PROPORCIONA'}}</span> solo para efectos de este contrato.
 </div>
@@ -303,8 +303,7 @@
     <tr>
         <td class="normalTd" colspan="5">
             Dudas, aclaraciones y reclamaciones:
-            * Para cualquier duda, aclaración o reclamación, favor de dirigirse a: {{$sucursal->calle_num, $sucursal->colonia}}, CP {{$sucursal->codigo_postal}}, {{$sucursal->municipio}},
-            {{$sucursal->estado}}. Telefono: {{$sucursal->telefono_1}}, correo electrónico: {{strtolower($sucursal->email)}}; Horario: {{$sucursal->horario_atencion}}.
+            * Para cualquier duda, aclaración o reclamación, favor de dirigirse a: {{$sucursal->calle_num}} - {{$sucursal->colonia}} - C.P. {{$sucursal->codigo_postal}} - {{$sucursal->municipio}} {{$sucursal->estado}} MEXICO. Telefono: {{$sucursal->telefono_1}}, Página de internet: (no tenemos); Horario: {{$sucursal->horario_atencion}}.
             <br>
             <div>* O en su caso a PROFECO a los teléfonos: 55 68 8722 o al 800 468 8722, Página de internet: www.gob.mx/profeco</div>
         </td>
@@ -316,8 +315,8 @@
     </tr>
     <tr>
         <td class="normalTd" style="background-color: #C0C0C0" colspan="5">
-            Contrato de Adhesión registrado en el Registro Público de Contratos de Adhesión de la Procuraduria Federal del Consumidor, bajo el número {{$sucursal->adhesion_num}} de
-            fecha {{$fechaAdhesion}}. El proveedor tene la oblicación de entregar al consumidor el documento en el cual se señala la descripción del préstamo,
+            Contrato de Adhesión registrado en el Registro Público de Contratos de Adhesión de la Procuraduria Federal del Consumidor, bajo el número 6096-2024 de
+            fecha 31 de julio de 2026. El proveedor tene la oblicación de entregar al consumidor el documento en el cual se señala la descripción del préstamo,
             saldos, movimientos y la descripción de la Prenda en garantía.
         </td>
     </tr>
@@ -332,10 +331,10 @@
                 mas amplio que en derecho corresponda, liberándolo de cualquier
                 responsabilidad jurídica que hubiere surgido o pudiese surgir en relación al
                 contrato y a la prenda.</div>
-            <div>FECHA: <span>{{strtoupper($fechaVencimiento)}}</span></div>
+            <div>FECHA: <span class="fw-bold">{{ strtoupper($fechav->translatedFormat('d-M-Y')) }}</span></div>
         </td>
         <td class="normalTd" colspan="2">
-            <div class="mb-5">Fecha: <span>{{strtoupper($fechaVencimiento)}}</span></div>
+            <div class="mb-5">Fecha: <span class="fw-bold">{{ strtoupper($fechav->translatedFormat('d-M-Y')) }}</span></div>
             <br>
             <br>
             <div><span class="text-decoration-underline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
@@ -343,9 +342,22 @@
         </td>
     </tr>
     <tr>
-        <td class="normalTd"><div></div><div class="mt-4">EL CONSUMIDOR</div></td>
-        <td class="normalTd" colspan="2"><div></div><div class="mt-4">EL PROVEEDOR</div></td>
-        <td class="normalTd" colspan="2"><div>(Nombre o Clave)</div><div class="mt-2">EL VALUADOR</div></td>
+        <td class="normalTd text-center" style="vertical-align: bottom; height: 60px;">
+            <br><br><br>
+            ______________________________<br>
+            EL CONSUMIDOR
+        </td>
+        <td class="normalTd text-center" colspan="2" style="vertical-align: bottom; height: 60px;">
+            <br><br><br>
+            ______________________________<br>
+            EL PROVEEDOR
+        </td>
+        <td class="normalTd text-center" colspan="2" style="vertical-align: bottom; height: 60px;">
+            <br><br><br>
+            ______________________________<br>
+            (Nombre o Clave)<br>
+            EL VALUADOR
+        </td>
     </tr>
     </tbody>
 </table>
@@ -397,8 +409,7 @@
                     cumplimiento a las obligaciones derivadas del presente contrato.
                 </div>
                 <div>D) Que antes de la firma del presente Contrato ha explicado a “EL CONSUMIDOR” el contenido y alcance legal del mismo.</div>
-                <div>E) Para la atención de dudas, aclaraciones, quejas o para proporcionar servicios de orientación, señala el domicilio ubicado en {{$sucursal->calle_num, $sucursal->colonia }}
-                    CP {{$sucursal->codigo_postal}},{{$sucursal->municipio}}, {{$sucursal->estado}}, Tel: {{$sucursal->telefono_1}}, correo electronico: {{$sucursal->email}},
+                <div>E) Para la atención de dudas, aclaraciones, quejas o para proporcionar servicios de orientación, señala el domicilio ubicado en {{$sucursal->calle_num}} - {{$sucursal->colonia}} - C.P. {{$sucursal->codigo_postal}} - {{$sucursal->municipio}} {{$sucursal->estado}} MEXICO, Tel: {{$sucursal->telefono_1}}, Página de internet: (no tenemos),
                     con un horario de atención de {{ $sucursal->horario_atencion }}.</div>
                 <div>
                     F) Que la Prenda objeto de este Contrato se encuentra asegurada.
