@@ -62,7 +62,7 @@ class BoletaController extends Controller
         $pdf = Pdf::loadView('contratoBoleta', compact('boleta', 'sucursal'));
         $pdf->setPaper('legal', 'portrait');
 
-        return $pdf->download("Contrato_Boleta_Folio_$boleta->id.pdf");
+        return $pdf->stream("Contrato_Boleta_Folio_$boleta->id.pdf");
     }
 
     public function show($id)
