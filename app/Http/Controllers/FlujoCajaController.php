@@ -67,7 +67,7 @@ class FlujoCajaController extends Controller
         $movimiento = MovimientosCaja::create([
             'caja_id' => 1, // Por ahora fijo a Caja 1 como en VB6
             'user_id' => Auth::id() ?? 1,
-            'flujo_concepto_id' => $request->concepto_id,
+            'concepto_id' => $request->concepto_id,
             'tipo' => 'ENTRADA',
             'monto' => $request->monto,
             'denominacion' => $request->denominaciones,
@@ -112,7 +112,7 @@ class FlujoCajaController extends Controller
         $movimiento = MovimientosCaja::create([
             'caja_id' => 1, // Por ahora fijo a Caja 1 como en VB6
             'user_id' => Auth::id() ?? 1,
-            'flujo_concepto_id' => $request->concepto_id,
+            'concepto_id' => $request->concepto_id,
             'tipo' => 'SALIDA',
             'monto' => $request->monto,
             'denominacion' => $request->denominaciones,
