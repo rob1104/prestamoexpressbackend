@@ -19,7 +19,7 @@ class MovimientosCaja extends Model
         "denominacion",
         "referencia_id",
         "observaciones",
-        "concepto_id",
+        "flujo_concepto_id",
         "recibido_por",
         "entregado_por",
         "autorizado_por",
@@ -42,7 +42,7 @@ class MovimientosCaja extends Model
     }
 
     public function conceptoFlujo() {
-        return $this->belongsTo(FlujoConcepto::class, 'concepto_id');
+        return $this->belongsTo(FlujoConcepto::class, 'flujo_concepto_id');
     }
 
     public function getActivitylogOptions(): LogOptions
