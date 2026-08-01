@@ -60,8 +60,10 @@ class ReporteFlujoCajaController extends Controller
             ->where('caja_id', $cajaId)
             ->whereNull('boleta_id')
             ->selectRaw("
-            SUM(CASE WHEN tipo = 'ENTRADA' THEN monto ELSE 0 END) as entradas,
-            SUM(CASE WHEN tipo = 'SALIDA' THEN monto ELSE 0 END) as salidas
+            SUM(CASE WHEN tipo = 'ENTRADA' AND (observaciones NOT LIKE '%Fondo%' OR observaciones IS NULL) THEN monto ELSE 0 END) as entradas_otros,
+            SUM(CASE WHEN tipo = 'ENTRADA' AND observaciones LIKE '%Fondo%' THEN monto ELSE 0 END) as entradas_fondo,
+            SUM(CASE WHEN tipo = 'SALIDA' AND (observaciones NOT LIKE 'Compra de Joyería%' OR observaciones IS NULL) THEN monto ELSE 0 END) as salidas_otros,
+            SUM(CASE WHEN tipo = 'SALIDA' AND observaciones LIKE 'Compra de Joyería%' THEN monto ELSE 0 END) as salidas_compras
         ")->first();
 
         // Préstamos Nuevos (SALIDAS)
@@ -72,19 +74,21 @@ class ReporteFlujoCajaController extends Controller
 
         return response()->json([
             'config' => [
-                'fecha_rango' => "DEL $f1 AL $f2",
+                'caja' => 'CAJA ' . $cajaId,
+                'fecha_rango' => 'DEL ' . date('d-M-Y', strtotime($f1)) . ' AL ' . date('d-M-Y', strtotime($f2)),
                 'saldo_inicial' => $saldoInicial,
-                'caja' => "CAJA $cajaId"
+                'fondo_fijo' => $otrosMov->entradas_fondo ?? 0
             ],
             'entradas' => [
                 'pagos_capital' => $cobranza->capital ?? 0,
                 'pagos_interes' => $cobranza->interes ?? 0,
                 'pagos_recargos' => $cobranza->recargos ?? 0,
-                'otros' => $otrosMov->entradas ?? 0,
+                'otros' => $otrosMov->entradas_otros ?? 0,
             ],
             'salidas' => [
                 'prestamos' => $prestamosNuevos ?? 0,
-                'otros' => $otrosMov->salidas ?? 0,
+                'compras_oro' => $otrosMov->salidas_compras ?? 0,
+                'otros' => $otrosMov->salidas_otros ?? 0,
             ]
         ]);
     }

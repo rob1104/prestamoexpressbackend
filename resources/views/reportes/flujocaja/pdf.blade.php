@@ -60,10 +60,10 @@
     @php
         // Variables auxiliares para totales
         $totalEntradas = $reporte['entradas']['pagos_capital'] + $reporte['entradas']['pagos_interes'] + $reporte['entradas']['pagos_recargos'] + $reporte['entradas']['otros'];
-        $totalSalidas = $reporte['salidas']['prestamos'] + $reporte['salidas']['otros'];
+        $totalSalidas = $reporte['salidas']['prestamos'] + $reporte['salidas']['compras_oro'] + $reporte['salidas']['otros'];
         
         // Simulación de Fondo Fijo para que cuadre con el diseño
-        $fondoFijo = 0.00;
+        $fondoFijo = $reporte['config']['fondo_fijo'] ?? 0.00;
         $saldoInicialHistorico = $reporte['config']['saldo_inicial'] ?? 0;
         
         $saldoFinalCalculado = $fondoFijo + $saldoInicialHistorico + $totalEntradas - $totalSalidas;
@@ -208,7 +208,7 @@
                     <tr class="item-row"><td>Retiros de Cajas</td><td class="text-right">$ 0.00</td></tr>
                     <tr class="item-row"><td>Gastos Generales / Varios</td><td class="text-right">$ {{ number_format($reporte['salidas']['otros'], 2) }}</td></tr>
                     <tr class="item-row"><td>Salidas de Caja</td><td class="text-right">$ 0.00</td></tr>
-                    <tr class="item-row"><td>Compra de Oro y Plata</td><td class="text-right">$ 0.00</td></tr>
+                    <tr class="item-row"><td>Compra de Oro y Plata</td><td class="text-right">$ {{ number_format($reporte['salidas']['compras_oro'], 2) }}</td></tr>
                     <tr class="item-row"><td>Dep. Vouchers Oro/Elec.</td><td class="text-right">$ 0.00</td></tr>
                 </table>
                 
