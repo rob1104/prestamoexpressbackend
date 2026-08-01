@@ -27,6 +27,7 @@ class ReporteFlujoCajaController extends Controller
                 ->whereDate('created_at', '<', $f1)
                 ->where('tipo', 'ENTRADA')
                 ->where('caja_id', $cajaId)
+                ->whereNull('boleta_id')
                 ->sum('monto');
 
         // Restamos salidas históricas (Préstamos + Movimientos Salida)
@@ -38,6 +39,7 @@ class ReporteFlujoCajaController extends Controller
                 ->whereDate('created_at', '<', $f1)
                 ->where('tipo', 'SALIDA')
                 ->where('caja_id', $cajaId)
+                ->whereNull('boleta_id')
                 ->sum('monto');
 
         $saldoInicial = $entradasH - $salidasH;
@@ -56,6 +58,7 @@ class ReporteFlujoCajaController extends Controller
         $otrosMov = DB::table('movimientos_cajas')
             ->whereBetween(DB::raw('DATE(created_at)'), [$f1, $f2])
             ->where('caja_id', $cajaId)
+            ->whereNull('boleta_id')
             ->selectRaw("
             SUM(CASE WHEN tipo = 'ENTRADA' THEN monto ELSE 0 END) as entradas,
             SUM(CASE WHEN tipo = 'SALIDA' THEN monto ELSE 0 END) as salidas
