@@ -27,16 +27,17 @@ class CierreService
 
 
         $fechaUltimo = $ultimoCierre ? Carbon::parse($ultimoCierre->fecha_cierre)->startOfDay() : null;
-        $diasFaltantes = $fechaUltimo->diffInDays($ayer);
+        
+        $diasFaltantes = $fechaUltimo ? (int) $fechaUltimo->diffInDays($ayer) : 0;
         $pendiente = $diasFaltantes > 0;
 
         $yaEsHora = $ahora->format('H:i:s') >= $horaCierre;
-        $sugerirHoy = (!$pendiente && $fechaUltimo->eq($ayer) && $yaEsHora);
+        $sugerirHoy = (!$pendiente && (!$fechaUltimo || $fechaUltimo->eq($ayer)) && $yaEsHora);
 
         return [
             'pendiente' => $pendiente,
             'dias_faltantes' => $diasFaltantes,
-            'ultima_fecha' => $fechaUltimo->format('Y-m-d'),
+            'ultima_fecha' => $fechaUltimo ? $fechaUltimo->format('Y-m-d') : null,
             'ayer' => $ayer->format('Y-m-d'),
             'sugerir_cierre_hoy' => $sugerirHoy,
             'hora_configurada' => $horaCierre,
