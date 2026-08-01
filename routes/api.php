@@ -128,7 +128,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/caja/salida-manual', [FlujoCajaController::class, 'registrarSalida']);
     Route::get('/caja/movimiento/{id}/ticket-url', [FlujoCajaController::class, 'ticketUrlFirmada']);
     Route::post('/caja/apertura', [MovimientoCajaController::class, 'registrarApertura']);
-    Route::get('reportes/flujo-caja', [ReportesController::class, 'flujoCaja']);
+    // Route::get('reportes/flujo-caja', [ReportesController::class, 'flujoCaja']);
     Route::get('reportes/boletas-diarias', [ReportesController::class, 'boletasDiarias']);
     Route::get('reportes/boletas-diarias/url-firmada-pdf', [ReportesController::class, 'urlFirmadaBoletasDiariasPDF']);
     Route::get('/reportes/boletas-vencidas', [ReportesController::class, 'boletasVencidas']);
