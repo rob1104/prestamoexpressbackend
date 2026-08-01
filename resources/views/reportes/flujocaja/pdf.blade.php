@@ -67,8 +67,7 @@
         $saldoInicialHistorico = $reporte['config']['saldo_inicial'] ?? 0;
         
         $saldoFinalCalculado = $fondoFijo + $saldoInicialHistorico + $totalEntradas - $totalSalidas;
-        $gastosPorComprobar = 0.00;
-        $diferencia = $saldoFinalCalculado - $fondoFijo - $gastosPorComprobar;
+        $diferencia = $saldoFinalCalculado;
     @endphp
 
     <!-- HEADER CORPORATIVO -->
@@ -257,20 +256,12 @@
     <div class="arqueo-box">
         <table class="arqueo-table">
             <tr>
-                <td>SALDO FINAL CALCULADO EN CAJA</td>
-                <td class="text-right fw-bold">$ {{ number_format($saldoFinalCalculado, 2) }}</td>
-            </tr>
-            <tr>
-                <td>(-) FONDO DE CAJA</td>
-                <td class="text-right">$ {{ number_format($fondoFijo, 2) }}</td>
-            </tr>
-            <tr>
-                <td style="padding-bottom: 10px;">(-) GASTOS POR COMPROBAR</td>
-                <td class="text-right" style="padding-bottom: 10px;">$ {{ number_format($gastosPorComprobar, 2) }}</td>
+                <td style="font-size: 13px;">SALDO FINAL CALCULADO EN CAJA</td>
+                <td class="text-right" style="font-size: 14px; font-weight: bold;">$ {{ number_format($saldoFinalCalculado, 2) }}</td>
             </tr>
             <tr class="diferencia-row">
-                <td style="padding-top: 10px;">DIFERENCIA (Faltante / Sobrante)</td>
-                <td class="text-right" style="padding-top: 10px;">$ {{ number_format($diferencia, 2) }}</td>
+                <td style="padding-top: 5px;">DIFERENCIA (Faltante / Sobrante)</td>
+                <td class="text-right" style="padding-top: 5px; font-size: 14px; font-weight: bold;">$ {{ number_format($diferencia, 2) }}</td>
             </tr>
         </table>
     </div>
