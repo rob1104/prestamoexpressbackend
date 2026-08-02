@@ -68,8 +68,8 @@
     $diferencia = round($subtotalSinIva - ($mAlmacenaje + $mIntDiv), 2);
 
     $interesPuro = $mIntDiv;
-    // La administración se descuenta de la porción de almacenaje en tradicional
-    $almacenaje  = $mAlmacenaje + $diferencia - $admin;
+    // El almacenaje absorbe la diferencia de centavos para cuadrar el subtotal exacto
+    $almacenaje  = $mAlmacenaje + $diferencia;
 
     $interesPuro = max(0, $interesPuro);
     $almacenaje = max(0, $almacenaje);
