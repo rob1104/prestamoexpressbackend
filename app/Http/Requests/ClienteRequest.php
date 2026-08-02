@@ -44,6 +44,7 @@ class ClienteRequest extends FormRequest
             'observacion'    => 'nullable|string',
             'ineFrente'      => 'nullable|string',
             'ineReverso'     => 'nullable|string',
+            'numero_ine'     => 'nullable|string|max:50',
             'email'          => 'nullable|string',
             'apellido_paterno' => 'required|string|max:255',
             'apellido_materno' => 'nullable|string|max:255',

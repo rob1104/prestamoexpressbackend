@@ -89,7 +89,7 @@
     CONTRATO DE MUTUO CON INTERÉS Y GARANTÍA PRENDARIA (PRÉSTAMO), que celebran: <span>{{$sucursal->razon_social}},</span>
     EL PROVEEDOR, con domicilio <span>{{$sucursal->calle_num}} - {{$sucursal->colonia}} - C.P. {{$sucursal->codigo_postal}} - {{$sucursal->municipio}} {{$sucursal->estado}} MEXICO</span>. RFC: <span>{{$sucursal->rfc}}</span>,
     Tel: <span>{{$sucursal->telefono_1}}</span>, Página de internet: <span>(no tenemos)</span>, en caso de persona moral: representado por : Martha Edith Muñéz Garza y EL
-    CONSUMIDOR <span>{{$boleta->cliente->nombre . " " . $boleta->cliente->apellido_paterno . " " . $boleta->cliente->apellido_materno}}</span>, que se identifica con INE número: <span>{{$boleta->cliente->identificacion ?? 'NO PROPORCIONA'}}</span>, con domicilio
+    CONSUMIDOR <span>{{$boleta->cliente->nombre . " " . $boleta->cliente->apellido_paterno . " " . $boleta->cliente->apellido_materno}}</span>, que se identifica con INE número: <span>{{$boleta->cliente->numero_ine ?? 'NO PROPORCIONA'}}</span>, con domicilio
     <span>{{$boleta->cliente->callenum ?? 'NO PROPORCIONA'}} - {{$boleta->cliente->colonia ?? ''}} - C.P. {{$boleta->cliente->codPostal ?? ''}} - {{$boleta->cliente->municipio ?? ''}} {{$boleta->cliente->estado ?? ''}}</span> con No. de teléfono: <span>{{$boleta->cliente->telefono1 ?? 'NO PROPORCIONA'}}</span> y con correo: <span>{{ $boleta->cliente->email ? strtolower($boleta->cliente->email) : 'NO PROPORCIONA' }}</span>.
     Quién designa como cotitular a <span>{{$boleta->cliente->cotitular ?? 'NO PROPORCIONA'}}</span>; y
     beneficiario a <span>{{$boleta->cliente->beneficiario ?? 'NO PROPORCIONA'}}</span> solo para efectos de este contrato.
