@@ -451,7 +451,7 @@ class ReportesController extends Controller
                     'g.fecha_movimiento as fecha',
                     'g.cliente',
                     'd.concepto as articulo',
-                    'd.categoria',
+                    'd.categoria as categoria_detalle',
                     'd.importe as precio_compra'
                 )->get()->map(function($item) {
                     $item->categoria = 'Joyería';
@@ -473,7 +473,7 @@ class ReportesController extends Controller
                     'g.fecha_movimiento as fecha',
                     'g.cliente',
                     'd.descripcion as articulo',
-                    'd.clasificacion as categoria',
+                    'd.clasificacion as categoria_detalle',
                     'd.importe as precio_compra'
                 )->get()->map(function($item) {
                     $item->categoria = 'Electrónicos';

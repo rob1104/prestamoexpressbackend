@@ -35,6 +35,7 @@
             <th>Folio</th>
             <th>Fecha</th>
             <th>Cliente</th>
+            <th>Tipo / Kilataje</th>
             <th>Artículo</th>
             <th>Categoría</th>
             <th class="text-right">Precio Compra ($)</th>
@@ -46,13 +47,14 @@
                 <td>{{ $compra->folio }}</td>
                 <td>{{ $compra->fecha }}</td>
                 <td>{{ $compra->cliente }}</td>
+                <td>{{ $compra->categoria_detalle }}</td>
                 <td>{{ $compra->articulo }}</td>
                 <td>{{ $compra->categoria }}</td>
                 <td class="text-right">${{ number_format($compra->precio_compra, 2) }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="6" class="text-center">No hay compras registradas en el periodo indicado.</td>
+                <td colspan="7" class="text-center">No hay compras registradas en el periodo indicado.</td>
             </tr>
         @endforelse
     </tbody>

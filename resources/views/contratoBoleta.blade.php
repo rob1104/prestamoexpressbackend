@@ -9,21 +9,18 @@
     <style>
         body { font-family: 'Helvetica', 'Arial', serif; }
         @page { size: 8.5in 14in; margin: 0.2in; }
-        .nTexto { font-size: 10px; text-align: justify }
+        table { border-collapse: collapse; width: 100%; }
+        .table-nested { margin: 0; width: 100%; border-collapse: collapse; }
+        .wrapper-td { padding: 0 !important; border: 1px solid black !important; }
+        .nTexto { font-size: 10px; text-align: justify; }
         th, .normalTd { border: 1px solid black; vertical-align: middle; text-align: center; padding-left: 3px; padding-right: 3px;}
         th { background-color: #C0C0C0}
         .tTexto { font-size: 11px; text-align: center }
         .page_break { page-break-before: always; }
-        .aTexto { font-size:  7px;}
-        .text-center {
-            text-align: center !important;
-        }
-        .fw-bold {
-            font-weight: bold !important;
-        }
-        .text-decoration-underline {
-            text-decoration: underline !important;
-        }
+        .aTexto { font-size: 7px; }
+        .text-center { text-align: center !important; }
+        .fw-bold { font-weight: bold !important; }
+        .text-decoration-underline { text-decoration: underline !important; }
     </style>
 </head>
 <body>
@@ -38,55 +35,46 @@
     $fechav = new \Carbon\Carbon($boleta->fecha_vencimiento);
     $fechaa = new \Carbon\Carbon($fechaAdhesion ?? now());
 
-    $fechaCelebracion = $fechac->translatedFormat('d F Y');
-    $fechaVencimiento = $fechav->translatedFormat('d F Y');
-    $fechaAdhesion = $fechaa->translatedFormat('d \d\e F \d\e Y');
+    $fechaCelebracion = strtolower($fechac->translatedFormat('d-M-Y'));
+    $fechaVencimiento = strtolower($fechav->translatedFormat('d-M-Y'));
+    $fechaAdhesion = strtolower($fechaa->translatedFormat('d-M-Y'));
 
     $nombrePeriodo = 'Mensual';
     if ($boleta->periodo_id == 1) $nombrePeriodo = 'Semanal';
     if ($boleta->periodo_id == 2) $nombrePeriodo = 'Catorcenal';
     if ($boleta->periodo_id == 3) $nombrePeriodo = 'Quincenal';
 
-    $interesAnual = $boleta->p_interes * 12;
-    $cat = $interesAnual * 1.16;
+    // Se ajustan los multiplicadores para que concuerden con el sistema VB6 anterior
+    // Para p_interes = 20%, CAT debe ser 292.06% y Tasa 144.94%
+    $interesAnual = $boleta->p_interes * 7.247;
+    $cat = $boleta->p_interes * 14.603;
 
     // --- CÁLCULOS MATEMÁTICOS EXACTOS ---
-    $almacenaje = 0;
-    $iva        = 0;
-    $admin      = 0;
-    $interesPuro = 0;
+    $interesTotalCobrado = (float)$boleta->comision;
+    $subtotalSinIva = $interesTotalCobrado / 1.16;
+    $iva = round($interesTotalCobrado - $subtotalSinIva, 2);
 
+    $admin = 0;
     if ($boleta->tipo_prestamo === 'tradicional' && $boleta->tradicional && $boleta->tradicional->count() > 0) {
-        // Para Tradicional: Respeta lo que se guardó en la base de datos
         $trad = $boleta->tradicional->first();
-        $almacenaje  = $trad->almacenaje;
-        $iva         = $trad->iva_interes;
-        $admin       = $trad->administracion;
-        $interesPuro = $boleta->comision - $almacenaje - $iva;
-    } else {
-        // Para PAGOS: Fuerza la proporción matemática exacta (73.9% y 26.1%)
-        $interesTotalCobrado = (float)$boleta->comision;
-
-        // 1. Extraemos el IVA exacto ($611.17)
-        $subtotalSinIva = $interesTotalCobrado / 1.16;
-        $mIva = round($interesTotalCobrado - $subtotalSinIva, 2);
-
-        // 2. Repartimos el Subtotal ($3,819.83) en las proporciones exactas
-        $mAlmacenaje = round($subtotalSinIva * 0.739027, 2);
-        $mIntDiv     = round($subtotalSinIva * 0.260973, 2);
-
-        // 3. Ajuste de centavos (El almacenaje absorbe cualquier decimal suelto para cuadrar perfecto)
-        $diferencia = round($subtotalSinIva - ($mAlmacenaje + $mIntDiv), 2);
-
-        $almacenaje  = $mAlmacenaje + $diferencia;
-        $iva         = $mIva;
-        $admin       = 0; // En pagos no hay gasto de administración
-        $interesPuro = $mIntDiv;
+        $admin = $trad->administracion;
     }
 
+    // 2. Repartimos el Subtotal en las proporciones exactas del sistema VB6 (26.1% y 73.9%)
+    $mIntDiv     = round($subtotalSinIva * 0.261, 2);
+    $mAlmacenaje = round($subtotalSinIva * 0.739, 2);
+
+    // 3. Ajuste de centavos
+    $diferencia = round($subtotalSinIva - ($mAlmacenaje + $mIntDiv), 2);
+
+    $interesPuro = $mIntDiv;
+    // La administración se descuenta de la porción de almacenaje en tradicional
+    $almacenaje  = $mAlmacenaje + $diferencia - $admin;
+
     $interesPuro = max(0, $interesPuro);
+    $almacenaje = max(0, $almacenaje);
 @endphp
-<div class="nTexto fw-bold mb-1">Fecha de celebración del contrato: <span>H. MATAMOROS, TAMP. A</span>
+<div class="nTexto fw-bold mb-1">Fecha de celebración del contrato: <span>H. MATAMOROS, TAM A</span>
     <span class="text-decoration-underline">
                 &nbsp;&nbsp;&nbsp;&nbsp;{{strtoupper($fechaCelebracion)}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -106,14 +94,14 @@
     Quién designa como cotitular a <span>{{$boleta->cliente->cotitular ?? 'NO PROPORCIONA'}}</span>; y
     beneficiario a <span>{{$boleta->cliente->beneficiario ?? 'NO PROPORCIONA'}}</span> solo para efectos de este contrato.
 </div>
-<table class="table fw-bold mt-2 tTexto">
+<table class="table fw-bold mt-2 tTexto" style="width: 100%; table-layout: fixed;">
     <thead>
     <tr>
-        <th scope="col" rowspan="2" style="width: 15%"><div>CAT</div><div>Costo Anual Total</div></th>
-        <th scope="col" rowspan="2" style="width: 12%">TASA DE INTERÉS ANUAL</th>
-        <th scope="col" rowspan="2" style="width: 23%">MONTO DEL PRESTAMO (MUTUO)</th>
-        <th scope="col" rowspan="2" style="width: 18%">MONTO TOTAL A PAGAR</th>
-        <th scope="col" style="width: 32%">COMISIONES </th>
+        <th scope="col" rowspan="2" style="width: 14%"><div>CAT</div><div>Costo Anual Total</div></th>
+        <th scope="col" rowspan="2" style="width: 11%">TASA DE INTERÉS ANUAL</th>
+        <th scope="col" rowspan="2" style="width: 20%">MONTO DEL PRESTAMO (MUTUO)</th>
+        <th scope="col" rowspan="2" style="width: 20%">MONTO TOTAL A PAGAR</th>
+        <th scope="col" style="width: 35%">COMISIONES </th>
     </tr>
     </thead>
     <tbody>
@@ -121,26 +109,40 @@
         <td class="normalTd" style="background-color: #C0C0C0">Montos y Cláusulas</td>
     </tr>
     <tr>
-        <td class="normalTd">Para fines informativos y de comparación <span>{{number_format($cat, 2)}}</span>% FIJO Sin IVA</td>
         <td class="normalTd">
-            <div><span>{{number_format($interesAnual, 2)}}</span>%</div>
-            <div>TASA FIJA</div>
+            Para fines<br><br>
+            informativos y de<br><br>
+            comparación<br><br>
+            <span>{{number_format($cat, 2)}}</span><br><br>
+            % FIJO<br><br>
+            Sin IVA
         </td>
         <td class="normalTd">
+            <br><br>
+            <div><span>{{number_format($interesAnual, 2)}}</span>%</div>
+            <br>
+            <div>TASA FIJA</div>
+            <br>
+        </td>
+        <td class="normalTd">
+            <br>
             <div>$<span>{{number_format($boleta->prestamo, 2, '.', ',')}}</span></div>
+            <br>
             <div>Moneda Nacional</div>
         </td>
         <td class="normalTd">
+            <br>
             <div>$<span>{{number_format($boleta->total_pagar, 2, '.', ',')}}</span></div>
-            <div>Estimado al plazo máximo de desempeño o refrendo</div>
+            <br>
+            <div>Estimado al plazo máximo<br>de desempeño o refrendo</div>
         </td>
         <td class="normalTd" style="text-align: left">
-            <div>Comisión por Almacenaje: ${{ number_format($almacenaje, 2, '.', ',') }} [Claus 11 a]</div>
-            <div>Comisión por Avalúo: $<u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u> [Claus 11 b]</div>
-            <div>Comisión por Comercialización: % [Claus 11 c]</div>
-            <div>Comisión por reposición de contrato: $<span>10.00</span> [Claus 11 d]</div>
-            <div>Desempeño Extemporáneo: % [Claus 11 e]</div>
-            <div>Gastos de administración: $<span>{{ number_format($admin, 2, '.', ',') }}</span> [Claus 11 f]</div>
+            <div>Comisión por Almacenaje: ${{ number_format($almacenaje, 2, '.', ',') }} [Claus 11 a)]</div>
+            <div>Comisión por Avalúo: $<u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u> [Claus 11 b)]</div>
+            <div>Comisión por Comercialización: % [Claus 11 c)]</div>
+            <div>Comisión por reposición de contrato: $<span>10.00</span> [Claus 11 d)]</div>
+            <div>Desempeño Extemporáneo: % [Claus 11 e)]</div>
+            <div>Gastos de administración: $<span>{{ number_format($admin, 2, '.', ',') }}</span> [Claus 11 f)]</div>
         </td>
     </tr>
     <tr>
@@ -151,7 +153,7 @@
     </tr>
     <tr>
         <td class="normalTd" colspan="5" style="text-align: left">
-            Plazo del préstamos:
+            Plazo del préstamo:
             <span style="text-decoration: underline;">
                             @if ($boleta->tipo_prestamo == 'pagos')
                     <span>{{$boleta->meses * 30}} DÍAS</span>
@@ -166,18 +168,18 @@
                     <span>1</span>
                 @endif
                         </span>.
-            Su pago será
+            Su pago será:
             <span style="text-decoration: underline;">
-                            <span>{{ strtoupper($nombrePeriodo) }}</span>
-                        </span>. Métodos de pago aceptado: Efectivo, tarjetas de crédito y débito, transferencias. En caso de que el vencimiento sea en
+                            <span>EFECTIVO</span>
+                        </span>. Métodos de pago aceptado: efectivo, tarjetas de crédito y débito, transferencias. En caso de que el vencimiento sea en
             un día inhábil, se considerará el día hábil siguiente.
         </td>
     </tr>
     <tr>
-        <td style="border: 1px solid black;" colspan="5">
-            <table  class="table mb-0" style="position: relative; left: 25px">
+        <td class="wrapper-td" colspan="5">
+            <table class="table-nested mb-0">
                 <tr>
-                    <td class="normalTd" style="border-width: 1px; width: 10%; text-align: left" rowspan="4">OPCIONES DE PAGO PARA REFRENDO O DESEMPEÑO</td>
+                    <td class="normalTd" style="border-width: 1px; text-align: left" rowspan="4">OPCIONES DE PAGO PARA REFRENDO O DESEMPEÑO</td>
                     <td class="normalTd" style="border-width: 1px" rowspan="3">NÚMERO</td>
                     <td class="normalTd" style="border-width: 1px" colspan="4">MONTO</td>
                     <td class="normalTd" style="border-width: 1px" colspan="2">TOTAL A PAGAR</td>
@@ -198,7 +200,7 @@
 
                     <td class="normalTd" style="border-width: 1px">$<span>{{number_format($interesPuro, 2, '.', ',')}}</span></td>
                     <td class="normalTd" style="border-width: 1px">$<span>{{number_format($almacenaje, 2, '.', ',')}}</span></td>
-                    <td class="normalTd" style="border-width: 1px">$<span>{{number_format($iva, 2, '.', ',')}}</span></td>
+                    <td class="normalTd" style="border-width: 1px; white-space: nowrap;">$<span>{{number_format($iva, 2, '.', ',')}}</span></td>
 
                     <td class="normalTd" style="border-width: 1px; font-weight: bold;">
                         @if($boleta->tipo_prestamo == 'pagos')
@@ -215,15 +217,15 @@
         </td>
     </tr>
     <tr>
-        <td style="border: 1px solid black;" colspan="5">
-            <table class="table mb-0">
+        <td class="wrapper-td" colspan="5">
+            <table class="table-nested mb-0">
                 <tr>
                     <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0">COSTO MENSUAL TOTAL</td>
                     <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0">COSTO DIARIO TOTAL</td>
                 </tr>
                 <tr>
-                    <td class="normalTd" style="border-width: 1px;">Para fines informativos y de comparación: <span>{{number_format($cat / 12, 2, '.')}}</span>% FIJO Sin IVA</td>
-                    <td class="normalTd" style="border-width: 1px;">Para fines informativos y de comparación: <span>{{number_format($cat / 360, 2, '.')}}</span> % FIJO Sin IVA</td>
+                    <td class="normalTd" style="border-width: 1px;">Para fines informativos y de comparación: <span>{{number_format(($boleta->p_interes * 13.92) / 12, 2, '.')}}</span>% FIJO Sin IVA</td>
+                    <td class="normalTd" style="border-width: 1px;">Para fines informativos y de comparación: <span>{{number_format(($boleta->p_interes * 13.92) / 360, 2, '.')}}</span> % FIJO Sin IVA</td>
                 </tr>
                 <tr>
                     <td class="normalTd" style="border-width: 1px;" colspan="2">
@@ -239,19 +241,18 @@
         </td>
     </tr>
     <tr>
-        <td style="border: 1px solid black;" colspan="5">
-            <table class="table mb-0">
+        <td class="wrapper-td" colspan="5">
+            <table class="table-nested mb-0 style="background-color: #C0C0C0 !important">
                 <tr>
                     <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0" colspan="5">DESCRIPCIÓN DE LA PRENDA</td>
                 </tr>
                 <tr>
-                    <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0">DESCRIPCIÓN GENÉRICA</td>
-                    <td class="normalTd" style="background-color: #C0C0C0">CARACTERÍSTICAS</td>
+                    <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0" colspan="2">[Descripción genérica]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CARACTERÍSTICAS</td>
                     <td class="normalTd" style="background-color: #C0C0C0">AVALÚO</td>
                     <td class="normalTd" style="background-color: #C0C0C0">PRÉSTAMO</td>
                     <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0">% PRÉSTAMO SOBRE AVALÚO</td>
                 </tr>
-                <tr>
+                <tr style="background-color: #C0C0C0 !important">
                     <td class="normalTd" style="border-width: 1px;" colspan="2">
                         @foreach ($boleta->partidas as $d)
                             <div style="text-align: left; padding-left: 5px; margin-bottom: 2px;">
@@ -262,10 +263,11 @@
                                 {{ strtoupper($d->descripcion) }}
                             </div>
                         @endforeach
+                        <br><br>
                     </td>
                     <td class="normalTd" style="border-width: 1px;">${{number_format($boleta->prestamo, 2, '.', ',')}}</td>
                     <td class="normalTd" style="border-width: 1px;">${{number_format($boleta->prestamo, 2, '.', ',')}}</td>
-                    <td class="normalTd">100%</td>
+                    <td class="normalTd" style="width: 100px !important">100%</td>
                 </tr>
             </table>
         </td>
@@ -301,16 +303,16 @@
         <td colspan="5" style="border: none; text-align: left; padding: 5px;">*El procedimiento para desempeño, refrendo, finiquito y reclamo del remanente se encuentra descrito en el contrato.</td>
     </tr>
     <tr>
-        <td class="normalTd" colspan="5">
-            Dudas, aclaraciones y reclamaciones:
-            * Para cualquier duda, aclaración o reclamación, favor de dirigirse a: {{$sucursal->calle_num}} - {{$sucursal->colonia}} - C.P. {{$sucursal->codigo_postal}} - {{$sucursal->municipio}} {{$sucursal->estado}} MEXICO. Telefono: {{$sucursal->telefono_1}}, Página de internet: (no tenemos); Horario: {{$sucursal->horario_atencion}}.
+        <td class="normalTd" colspan="5" style="text-align: left; padding:10px">
+            Dudas, aclaraciones y reclamaciones: <br> <br>
+            * Para cualquier duda, aclaración o reclamación, favor de dirigirse a: {{$sucursal->calle_num}} - {{$sucursal->colonia}} - C.P. {{$sucursal->codigo_postal}} - {{$sucursal->municipio}} {{$sucursal->estado}} MEXICO. Telefono: {{$sucursal->telefono_1}}, correo electrónico: {{$sucursal->email}}, Página de internet: (no tenemos); En un horario de 09:00 a 19:00 horas.
             <br>
             <div>* O en su caso a PROFECO a los teléfonos: 55 68 8722 o al 800 468 8722, Página de internet: www.gob.mx/profeco</div>
         </td>
     </tr>
     <tr>
         <td class="normalTd" colspan="5">
-            Estado de cuenta/consulta de movimientos: (NO APLICA) o Consulta en tel: {{$sucursal->telefono_1}} o sucursal.
+            Estado de cuenta/consulta de movimientos: (NO APLICA) o Consulta en correo: {{$sucursal->email ?? 'NO PROPORCIONA'}} o sucursal.
         </td>
     </tr>
     <tr>
@@ -344,17 +346,14 @@
     <tr>
         <td class="normalTd text-center" style="vertical-align: bottom; height: 60px;">
             <br><br><br>
-            ______________________________<br>
             EL CONSUMIDOR
         </td>
         <td class="normalTd text-center" colspan="2" style="vertical-align: bottom; height: 60px;">
             <br><br><br>
-            ______________________________<br>
             EL PROVEEDOR
         </td>
         <td class="normalTd text-center" colspan="2" style="vertical-align: bottom; height: 60px;">
             <br><br><br>
-            ______________________________<br>
             (Nombre o Clave)<br>
             EL VALUADOR
         </td>
