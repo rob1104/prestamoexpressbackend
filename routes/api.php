@@ -123,6 +123,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/caja/conceptos', [FlujoCajaController::class, 'getConceptos']);
     Route::get('/caja/movimientos', [FlujoCajaController::class, 'historial']);
+    Route::get('/caja/inventario', [FlujoCajaController::class, 'inventarioCaja']);
     Route::apiResource('/flujo-conceptos', FlujoConceptoController::class);
     Route::post('/caja/entrada-manual', [FlujoCajaController::class, 'registrarEntrada']);
     Route::post('/caja/salida-manual', [FlujoCajaController::class, 'registrarSalida']);
