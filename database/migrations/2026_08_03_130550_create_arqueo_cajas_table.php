@@ -15,13 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('caja_id')->constrained('cajas')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users');
-            
+
             $table->decimal('importe_sistema', 12, 2)->default(0);
             $table->decimal('importe_arqueo', 12, 2)->default(0);
             $table->decimal('diferencia', 12, 2)->default(0);
-            
-            $table->json('desglose')->nullable(); // Guardará cuántos billetes de 1000, 500, monedas de 10, etc.
-            
+
+            $table->text('desglose')->nullable(); // Guardará cuántos billetes de 1000, 500, monedas de 10, etc.
+
             $table->timestamps();
         });
     }
