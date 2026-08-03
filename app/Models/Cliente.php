@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 class Cliente extends Model
 {
-    use LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'nombre', 'identificacion', 'clasificacion', 'telefono1', 'telefono2',

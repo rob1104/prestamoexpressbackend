@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 class Boleta extends Model
 {
-    use LogsActivity;
+    use HasFactory, LogsActivity;
     protected $fillable = [
         'cliente_id',
         'categoria_id',
@@ -33,9 +35,12 @@ class Boleta extends Model
         'estatus',
         'cotizacion_valor',
         'numero_pagos',
+        'motivo_cancelacion',
+        'cancelada_at',
     ];
 
     protected $casts = [
+        'cancelada_at' => 'datetime',
         'fecha_boleta'      => 'date',
         'fecha_vencimiento' => 'date',
         'prestamo'          => 'decimal:2',

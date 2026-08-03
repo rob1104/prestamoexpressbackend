@@ -60,8 +60,8 @@ class ReporteDetallesMovimientosController extends Controller
         $filtros = $request->input('filtros', []);
         $conceptos = $request->input('conceptos', []);
         
-        $fechaInicio = $filtros['fecha_inicio'] ?? now()->toDateString();
-        $fechaFin = $filtros['fecha_fin'] ?? now()->toDateString();
+        $fechaInicio = ($filtros['fecha_inicio'] ?? now()->toDateString()) . ' 00:00:00';
+        $fechaFin = ($filtros['fecha_fin'] ?? now()->toDateString()) . ' 23:59:59';
         $caja = $filtros['caja'] ?? 'Todas';
 
         $movimientos = collect();
@@ -126,7 +126,7 @@ class ReporteDetallesMovimientosController extends Controller
         // OTROS MOVIMIENTOS DE CAJA (Generales)
         if (in_array('entradas_caja', $conceptos)) {
             $q = DB::table('movimientos_cajas')
-                ->whereBetween(DB::raw('DATE(created_at)'), [$fechaInicio, $fechaFin])
+                ->whereBetween('created_at', [$fechaInicio, $fechaFin])
                 ->where('tipo', 'ENTRADA')
                 ->whereNull('boleta_id')
                 ->whereNull('referencia_id');
@@ -140,7 +140,7 @@ class ReporteDetallesMovimientosController extends Controller
 
         if (in_array('salidas_caja', $conceptos) || in_array('gastos_generales', $conceptos) || in_array('pagos_varios', $conceptos)) {
             $q = DB::table('movimientos_cajas')
-                ->whereBetween(DB::raw('DATE(created_at)'), [$fechaInicio, $fechaFin])
+                ->whereBetween('created_at', [$fechaInicio, $fechaFin])
                 ->where('tipo', 'SALIDA')
                 ->whereNull('boleta_id')
                 ->whereNull('referencia_id');

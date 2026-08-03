@@ -12,8 +12,8 @@ class ReporteFlujoCajaController extends Controller
 {
     public function generarFlujoCaja(Request $request)
     {
-        $f1 = $request->input('fecha_inicio');
-        $f2 = $request->input('fecha_fin');
+        $f1 = $request->input('fecha_inicio') . ' 00:00:00';
+        $f2 = $request->input('fecha_fin') . ' 23:59:59';
         $cajaId = $request->input('caja_id', 1); // Por defecto Caja 1
 
         // --- 1. CÁLCULO DEL SALDO INICIAL (Histórico antes de f1) ---
@@ -33,7 +33,7 @@ class ReporteFlujoCajaController extends Controller
         // Restamos salidas históricas (Préstamos + Movimientos Salida)
         $salidasH = DB::table('boletas')
                 ->whereDate('fecha_boleta', '<', $f1)
-                ->where('estatus', '!=', 'ANULADO')
+                ->whereNotIn('estatus', ['ANULADO', 'CA'])
                 ->sum('prestamo') +
             DB::table('movimientos_cajas')
                 ->whereDate('created_at', '<', $f1)
@@ -56,7 +56,7 @@ class ReporteFlujoCajaController extends Controller
 
         // Movimientos Diversos (ENTRADAS/SALIDAS)
         $otrosMov = DB::table('movimientos_cajas')
-            ->whereBetween(DB::raw('DATE(created_at)'), [$f1, $f2])
+            ->whereBetween('created_at', [$f1, $f2])
             ->where('caja_id', $cajaId)
             ->whereNull('boleta_id')
             ->selectRaw("
@@ -69,7 +69,7 @@ class ReporteFlujoCajaController extends Controller
         // Préstamos Nuevos (SALIDAS)
         $prestamosNuevos = DB::table('boletas')
             ->whereBetween('fecha_boleta', [$f1, $f2])
-            ->where('estatus', '!=', 'ANULADO')
+            ->whereNotIn('estatus', ['ANULADO', 'CA'])
             ->sum('prestamo');
 
         return response()->json([

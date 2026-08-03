@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 class Categoria extends Model
 {
-    use LogsActivity;
+    use HasFactory, LogsActivity;
     protected $fillable = [
         'nombre',
         'descripcion',

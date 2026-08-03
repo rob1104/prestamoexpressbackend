@@ -44,31 +44,33 @@ class AppServiceProvider extends ServiceProvider
         try {
             $connection = DB::connection();
 
-            $customGrammar = new class($connection) extends MySqlGrammar {
-                // Añadimos el constructor para recibir la conexión y pasarla al padre
-                public function __construct($connection)
-                {
-                    // En Laravel 11, algunas gramáticas requieren la conexión en el constructor
-                    // Si tu versión no la pide, esto no romperá nada.
-                    parent::__construct($connection);
-                }
+            if ($connection->getDriverName() === 'mysql') {
+                $customGrammar = new class($connection) extends MySqlGrammar {
+                    // Añadimos el constructor para recibir la conexión y pasarla al padre
+                    public function __construct($connection)
+                    {
+                        // En Laravel 11, algunas gramáticas requieren la conexión en el constructor
+                        // Si tu versión no la pide, esto no romperá nada.
+                        parent::__construct($connection);
+                    }
 
-                public function compileColumns($schema, $table)
-                {
-                    return sprintf(
-                        'select column_name as `name`, data_type as `type_name`, column_type as `type`, ' .
-                        'collation_name as `collation`, is_nullable as `nullable`, ' .
-                        'column_default as `default`, column_comment as `comment`, ' .
-                        'NULL as `expression`, ' . // <--- Agregamos NULL con el alias 'expression'
-                        'extra as `extra` from information_schema.columns ' .
-                        'where table_schema = schema() and table_name = %s ' .
-                        'order by ordinal_position asc',
-                        $this->quoteString($table)
-                    );
-                }
-            };
+                    public function compileColumns($schema, $table)
+                    {
+                        return sprintf(
+                            'select column_name as `name`, data_type as `type_name`, column_type as `type`, ' .
+                            'collation_name as `collation`, is_nullable as `nullable`, ' .
+                            'column_default as `default`, column_comment as `comment`, ' .
+                            'NULL as `expression`, ' . // <--- Agregamos NULL con el alias 'expression'
+                            'extra as `extra` from information_schema.columns ' .
+                            'where table_schema = schema() and table_name = %s ' .
+                            'order by ordinal_position asc',
+                            $this->quoteString($table)
+                        );
+                    }
+                };
 
-            $connection->setSchemaGrammar($customGrammar);
+                $connection->setSchemaGrammar($customGrammar);
+            }
         } catch (\Exception $e) {
             // Silenciamos errores si se ejecuta desde consola sin DB
         }

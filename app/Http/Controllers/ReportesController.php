@@ -14,8 +14,8 @@ class ReportesController extends Controller
 {
     private function getDatosBoletasDiarias(Request $request)
     {
-        $fechaInicial = $request->input('fecha_inicial', now()->toDateString());
-        $fechaFinal = $request->input('fecha_final', now()->toDateString());
+        $fechaInicial = $request->input('fecha_inicial', now()->toDateString()) . ' 00:00:00';
+        $fechaFinal = $request->input('fecha_final', now()->toDateString()) . ' 23:59:59';
         $tipoReporte = $request->input('tipo_reporte', 'boletas');
 
         $boletasDiarias = collect();
@@ -23,7 +23,7 @@ class ReportesController extends Controller
         if ($tipoReporte === 'boletas') {
             // Boletas creadas
             $boletas = \App\Models\Boleta::with(['cliente', 'tradicional'])
-                ->whereBetween(DB::raw('DATE(fecha_boleta)'), [$fechaInicial, $fechaFinal])
+                ->whereBetween('fecha_boleta', [$fechaInicial, $fechaFinal])
                 ->get();
 
             foreach ($boletas as $boleta) {
@@ -57,6 +57,18 @@ class ReportesController extends Controller
                     $almacenaje += $diferencia;
                 }
 
+                $total = (float)$boleta->total_pagar;
+
+                if ($boleta->estatus === 'CA') {
+                    $capital = 0;
+                    $almacenaje = 0;
+                    $iva = 0;
+                    $admin = 0;
+                    $interes = 0;
+                    $interes_cobrado = 0;
+                    $total = 0;
+                }
+
                 $boletasDiarias->push([
                     'id' => $boleta->id,
                     'fecha' => Carbon::parse($boleta->fecha_boleta)->toDateString(),
@@ -71,7 +83,7 @@ class ReportesController extends Controller
                     'administracion' => $admin,
                     'iva' => $iva,
                     'interes_iva' => $interes_cobrado,
-                    'total' => (float)$boleta->total_pagar
+                    'total' => $total
                 ]);
             }
 
@@ -80,7 +92,7 @@ class ReportesController extends Controller
 
         // Pagos y Refrendos
         $query = \App\Models\Pago::with(['boleta.cliente', 'boleta.tradicional'])
-            ->whereBetween(DB::raw('DATE(fecha)'), [$fechaInicial, $fechaFinal]);
+            ->whereBetween('fecha', [$fechaInicial, $fechaFinal]);
 
         if ($tipoReporte === 'pagos') {
             // Pagos: en abonos tipo 4 o 'P'
@@ -156,6 +168,18 @@ class ReportesController extends Controller
             $tipoNum = $pago->tipo_movimiento;
             $tipoStr = $tipoNum == 1 ? 'R' : ($tipoNum == 2 ? 'D' : ($tipoNum == 4 ? 'P' : $tipoNum));
 
+            $total = (float)$pago->totalPagado;
+
+            if ($boleta->estatus === 'CA' || $pago->estatus === 'C') {
+                $capital = 0;
+                $almacenaje = 0;
+                $iva = 0;
+                $admin = 0;
+                $interes = 0;
+                $interes_cobrado = 0;
+                $total = 0;
+            }
+
             $boletasDiarias->push([
                 'id' => $pago->id, // just for unique key
                 'fecha' => Carbon::parse($pago->fecha)->toDateString(),
@@ -170,7 +194,7 @@ class ReportesController extends Controller
                 'administracion' => $admin,
                 'iva' => $iva,
                 'interes_iva' => $interes_cobrado,
-                'total' => (float)$pago->totalPagado
+                'total' => $total
             ]);
         }
 
@@ -275,8 +299,8 @@ class ReportesController extends Controller
 
     private function getDatosVentasDetallado(Request $request)
     {
-        $fechaInicio = $request->input('fecha_inicio', now()->toDateString());
-        $fechaFin = $request->input('fecha_fin', now()->toDateString());
+        $fechaInicio = $request->input('fecha_inicio', now()->toDateString()) . ' 00:00:00';
+        $fechaFin = $request->input('fecha_fin', now()->toDateString()) . ' 23:59:59';
         $categoria = $request->input('categoria', 'Todas');
 
         $ventasJoyeria = collect();
@@ -379,8 +403,8 @@ class ReportesController extends Controller
     
     private function getDatosCierreDiario(Request $request)
     {
-        $fechaInicio = $request->input('fecha_inicio', now()->toDateString());
-        $fechaFin = $request->input('fecha_fin', now()->toDateString());
+        $fechaInicio = $request->input('fecha_inicio', now()->toDateString()) . ' 00:00:00';
+        $fechaFin = $request->input('fecha_fin', now()->toDateString()) . ' 23:59:59';
 
         $cierres = CierreDiario::whereBetween('fecha_cierre', [$fechaInicio, $fechaFin])
             ->orderBy('fecha_cierre', 'desc')
@@ -433,8 +457,8 @@ class ReportesController extends Controller
 
     private function getDatosComprasDetallado(Request $request)
     {
-        $fechaInicio = $request->input('fecha_inicio', now()->toDateString());
-        $fechaFin = $request->input('fecha_fin', now()->toDateString());
+        $fechaInicio = $request->input('fecha_inicio', now()->toDateString()) . ' 00:00:00';
+        $fechaFin = $request->input('fecha_fin', now()->toDateString()) . ' 23:59:59';
         $categoria = $request->input('categoria', 'Todas');
 
         $comprasJoyeria = collect();

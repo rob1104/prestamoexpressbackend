@@ -4,53 +4,60 @@
     <meta charset="UTF-8">
     <title>Reporte de Compras Detallado</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 18px; }
-        .header p { margin: 2px 0; color: #555; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-        th { background-color: #f4f4f4; font-weight: bold; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 8px; }
+        .header { text-align: center; margin-bottom: 20px; font-weight: bold; }
+        .title { font-size: 12px; margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #000; padding: 3px; text-align: center; }
+        th { background-color: #e0e0e0; font-size: 7px; }
+        td { font-size: 7px; }
         .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #777; }
-        .summary-box { border: 1px solid #ccc; padding: 10px; margin-top: 20px; background-color: #f9f9f9; }
+        .text-left { text-align: left; }
+        .bold { font-weight: bold; }
+        .footer { position: fixed; bottom: -20px; width: 100%; text-align: center; font-size: 8px; }
+        .summary-box { margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
+@php
+    $fechainicial = isset($filtros['fecha_inicio']) ? \Carbon\Carbon::parse($filtros['fecha_inicio'])->translatedFormat('d-M-Y') : 'N/A';
+    $fechafinal = isset($filtros['fecha_fin']) ? \Carbon\Carbon::parse($filtros['fecha_fin'])->translatedFormat('d-M-Y') : 'N/A';
+    $categoriaFiltro = isset($filtros['categoria']) ? $filtros['categoria'] : 'TODAS';
+@endphp
+
 <div class="header">
-    <h1>Reporte de Compras Detallado</h1>
-    <p>Fecha de Impresión: {{ $fechaImpresion }}</p>
-    <p>
-        Filtros -> 
-        Periodo: {{ $filtros['fecha_inicio'] ?? 'N/A' }} al {{ $filtros['fecha_fin'] ?? 'N/A' }} | 
-        Categoría: {{ $filtros['categoria'] ?? 'Todas' }}
-    </p>
+    <div class="title">PRESTAMO EXPRESS MATRIZ</div>
+    <div>CORPORATIVO EXPRESS S.A. DE C.V.</div>
+    <div>SISTEMA DE CASAS DE EMPE&Ntilde;O "SICAE"</div>
+    <div>REPORTE DE COMPRAS DETALLADO</div>
+    <div style="margin-top: 10px;">DEL {{ strtoupper($fechainicial) }} AL {{ strtoupper($fechafinal) }}</div>
+    <div>CATEGORIA: {{ strtoupper($categoriaFiltro) }}</div>
+    <div style="text-align: right; font-size: 8px;">HORA: {{ \Carbon\Carbon::now()->format('h:i a') }}</div>
 </div>
 
 <table>
     <thead>
         <tr>
-            <th>Folio</th>
-            <th>Fecha</th>
-            <th>Cliente</th>
-            <th>Tipo / Kilataje</th>
-            <th>Artículo</th>
-            <th>Categoría</th>
-            <th class="text-right">Precio Compra ($)</th>
+            <th>FOLIO</th>
+            <th>FECHA</th>
+            <th>CLIENTE</th>
+            <th>TIPO / KILATAJE</th>
+            <th>ARTICULO</th>
+            <th>CATEGORIA</th>
+            <th class="text-right">PRECIO COMPRA ($)</th>
         </tr>
     </thead>
     <tbody>
         @forelse ($compras as $compra)
             <tr>
                 <td>{{ $compra->folio }}</td>
-                <td>{{ $compra->fecha }}</td>
-                <td>{{ $compra->cliente }}</td>
+                <td>{{ \Carbon\Carbon::parse($compra->fecha)->translatedFormat('d-M-Y') }}</td>
+                <td class="text-left">{{ $compra->cliente }}</td>
                 <td>{{ $compra->categoria_detalle }}</td>
                 <td>{{ $compra->articulo }}</td>
                 <td>{{ $compra->categoria }}</td>
-                <td class="text-right">${{ number_format($compra->precio_compra, 2) }}</td>
+                <td class="text-right">{{ number_format($compra->precio_compra, 2) }}</td>
             </tr>
         @empty
             <tr>
@@ -61,13 +68,20 @@
 </table>
 
 <div class="summary-box">
-    <strong>Resumen:</strong><br>
-    Artículos Comprados: {{ $totales['cantidad_articulos'] }}<br>
-    Monto Total Comprado: ${{ number_format($totales['monto_total'], 2) }}
+    <table>
+        <tr style="background-color: #e0e0e0;">
+            <td colspan="6" class="text-right bold" style="border: none;">RESUMEN DE TOTALES</td>
+            <td class="text-right bold" style="border: none; border-top: 2px solid black;">{{ number_format($totales['monto_total'], 2) }}</td>
+        </tr>
+        <tr>
+            <td colspan="6" class="text-right bold" style="border: none;">ARTICULOS COMPRADOS:</td>
+            <td class="text-right bold" style="border: none;">{{ $totales['cantidad_articulos'] }}</td>
+        </tr>
+    </table>
 </div>
 
 <div class="footer">
-    Generado automáticamente por el Sistema de Control Préstamo Express
+    Impreso el {{ $fechaImpresion }}
 </div>
 
 </body>

@@ -600,4 +600,31 @@ class BoletaController extends Controller
             ]);
         });
     }
+
+    public function cancelar(Request $request, $id)
+    {
+        $request->validate([
+            'motivo' => 'required|string|max:1000'
+        ]);
+
+        $boleta = Boleta::findOrFail($id);
+
+        if ($boleta->estatus === 'CA') {
+            return response()->json(['message' => 'La boleta ya se encuentra cancelada'], 422);
+        }
+
+        if (in_array($boleta->estatus, ['LI', 'EN', 'CV'])) {
+            return response()->json(['message' => 'No se puede cancelar una boleta liquidada o enajenada'], 422);
+        }
+
+        DB::transaction(function () use ($boleta, $request) {
+            $boleta->update([
+                'estatus' => 'CA',
+                'motivo_cancelacion' => $request->input('motivo'),
+                'cancelada_at' => now(),
+            ]);
+        });
+
+        return response()->json(['message' => 'Boleta cancelada exitosamente', 'boleta' => $boleta]);
+    }
 }

@@ -23,6 +23,7 @@ use App\Http\Controllers\VentaJoyeriaController;
 use App\Http\Controllers\DatabaseAdminController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\FlujoConceptoController;
+use App\Http\Controllers\ArqueoCajaController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -91,6 +92,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/boletas/pagos/refrendo', [PagoController::class, 'registrarRefrendo'])->name('boletas.refrendo');
     Route::post('/boletas/pagos/liquidacion', [BoletaController::class, 'procesarLiquidacion']);
     Route::post('/boletas/pagos/abono', [BoletaController::class, 'procesarAbono']);
+    Route::post('/boletas/{id}/cancelar', [BoletaController::class, 'cancelar'])->middleware('can:cancelar boletas');
     Route::get('/boletas', [BoletaController::class, 'index'])->name('boletas.index');
     Route::get('/boletas/{id}/pdf', [BoletaController::class, 'downloadPdf'])->name('boletas.pdf');
     Route::get('/boletas/{id}/detalles', [BoletaController::class, 'detalles']);
@@ -127,6 +129,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/flujo-conceptos', FlujoConceptoController::class);
     Route::post('/caja/entrada-manual', [FlujoCajaController::class, 'registrarEntrada']);
     Route::post('/caja/salida-manual', [FlujoCajaController::class, 'registrarSalida']);
+    Route::post('/caja/arqueo', [ArqueoCajaController::class, 'store']);
     Route::get('/caja/movimiento/{id}/ticket-url', [FlujoCajaController::class, 'ticketUrlFirmada']);
     Route::get('/caja/check-apertura', [MovimientoCajaController::class, 'checkApertura']);
     Route::post('/caja/apertura', [MovimientoCajaController::class, 'registrarApertura']);
