@@ -98,7 +98,7 @@ class BoletaController extends Controller
     public function detalles($id)
     {
         // Traemos la boleta sin importar si es tradicional, pagos, o si ya está liquidada
-        $boleta = Boleta::with(['cliente', 'partidas'])->findOrFail($id);
+        $boleta = Boleta::with(['cliente', 'partidas', 'user'])->findOrFail($id);
 
         // Cargamos el historial dependiendo de qué tipo sea
         if ($boleta->tipo_prestamo === 'tradicional') {
