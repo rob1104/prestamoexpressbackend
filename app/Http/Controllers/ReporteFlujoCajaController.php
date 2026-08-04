@@ -17,7 +17,6 @@ class ReporteFlujoCajaController extends Controller
         $cajaId = $request->input('caja_id', 1); // Por defecto Caja 1
 
         // --- 1. CÁLCULO DEL SALDO INICIAL (Histórico antes de f1) ---
-        // Sumamos entradas históricas (Pagos + Movimientos Entrada)
         $entradasH = DB::table('pagos')
                 ->where('fecha', '<', $f1)
                 ->where('estatus', 'A')
@@ -30,7 +29,6 @@ class ReporteFlujoCajaController extends Controller
                 ->whereNull('boleta_id')
                 ->sum('monto');
 
-        // Restamos salidas históricas (Préstamos + Movimientos Salida)
         $salidasH = DB::table('boletas')
                 ->whereDate('fecha_boleta', '<', $f1)
                 ->whereNotIn('estatus', ['ANULADO', 'CA'])
@@ -46,49 +44,192 @@ class ReporteFlujoCajaController extends Controller
 
         // --- 2. MOVIMIENTOS DEL PERIODO (f1 a f2)  ---
 
-        // Desglose de Pagos (ENTRADAS)
-        $cobranza = DB::table('pagos')
-            ->whereBetween('fecha', [$f1, $f2])
-            ->where('estatus', 'A')
-            ->where('caja_id', $cajaId)
-            ->selectRaw("SUM(capital) as capital, SUM(interestotal + ivaIC) as interes, SUM(recargosNormal) as recargos")
+        // 2.1 PAGOS (Plan Pagos / Auto)
+        $pagos_entradas = DB::table('pagos')
+            ->join('boletas', 'pagos.boleta_id', '=', 'boletas.id')
+            ->whereBetween('pagos.fecha', [$f1, $f2])
+            ->where('pagos.estatus', 'A')
+            ->where('pagos.caja_id', $cajaId)
+            ->whereIn('boletas.tipo_prestamo', ['pagos', 'auto'])
+            ->selectRaw("SUM(pagos.capital + pagos.interestotal + pagos.ivaIC) as pagos, SUM(pagos.recargosNormal) as recargos")
             ->first();
 
-        // Movimientos Diversos (ENTRADAS/SALIDAS)
+        $pagos_nc = DB::table('nota_creditos')
+            ->whereBetween('created_at', [$f1, $f2])
+            ->where('estatus', 'aplicado')
+            ->where('caja_id', $cajaId)
+            ->whereIn('tipo_prestamo', ['pagos', 'auto'])
+            ->sum('cantidad');
+
+        // 2.2 TRADICIONAL
+        $trad_refrendos = DB::table('pagos')
+            ->join('boletas', 'pagos.boleta_id', '=', 'boletas.id')
+            ->whereBetween('pagos.fecha', [$f1, $f2])
+            ->where('pagos.estatus', 'A')
+            ->where('pagos.caja_id', $cajaId)
+            ->where('boletas.tipo_prestamo', 'tradicional')
+            ->whereIn('pagos.tipo_movimiento', [1, 3])
+            ->selectRaw("SUM(pagos.interestotal + pagos.ivaIC) as comision, SUM(pagos.recargosNormal) as recargos")
+            ->first();
+
+        $trad_liquidaciones = DB::table('pagos')
+            ->join('boletas', 'pagos.boleta_id', '=', 'boletas.id')
+            ->whereBetween('pagos.fecha', [$f1, $f2])
+            ->where('pagos.estatus', 'A')
+            ->where('pagos.caja_id', $cajaId)
+            ->where('boletas.tipo_prestamo', 'tradicional')
+            ->where('pagos.tipo_movimiento', 4)
+            ->selectRaw("SUM(pagos.capital) as capital, SUM(pagos.interestotal + pagos.ivaIC) as comision, SUM(pagos.recargosNormal) as recargos")
+            ->first();
+
+        $trad_nc = DB::table('nota_creditos')
+            ->whereBetween('created_at', [$f1, $f2])
+            ->where('estatus', 'aplicado')
+            ->where('caja_id', $cajaId)
+            ->where('tipo_prestamo', 'tradicional')
+            ->sum('cantidad');
+
+        // 2.3 VENTAS
+        $ventas_elec = DB::table('ventas_electronicos_pagos')
+            ->whereBetween('fecha_pago', [$f1, $f2])
+            ->where('estatus', 'A')
+            ->sum('importe');
+
+        $ventas_oro = DB::table('ventas_joyeria_pagos')
+            ->whereBetween('fecha_pago', [$f1, $f2])
+            ->where('estatus', 'A')
+            ->sum('importe');
+
+        // 2.4 OTROS MOVIMIENTOS
         $otrosMov = DB::table('movimientos_cajas')
             ->whereBetween('created_at', [$f1, $f2])
             ->where('caja_id', $cajaId)
             ->whereNull('boleta_id')
             ->selectRaw("
-            SUM(CASE WHEN tipo = 'ENTRADA' AND (observaciones NOT LIKE '%Fondo%' OR observaciones IS NULL) THEN monto ELSE 0 END) as entradas_otros,
-            SUM(CASE WHEN tipo = 'ENTRADA' AND observaciones LIKE '%Fondo%' THEN monto ELSE 0 END) as entradas_fondo,
-            SUM(CASE WHEN tipo = 'SALIDA' AND (observaciones NOT LIKE 'Compra de Joyería%' OR observaciones IS NULL) THEN monto ELSE 0 END) as salidas_otros,
-            SUM(CASE WHEN tipo = 'SALIDA' AND observaciones LIKE 'Compra de Joyería%' THEN monto ELSE 0 END) as salidas_compras
-        ")->first();
+                SUM(CASE WHEN tipo = 'ENTRADA' AND observaciones LIKE '%Fondo%' THEN monto ELSE 0 END) as entradas_fondo,
+                SUM(CASE WHEN tipo = 'ENTRADA' AND observaciones NOT LIKE '%Fondo%' THEN monto ELSE 0 END) as entradas_otros,
+                SUM(CASE WHEN tipo = 'SALIDA' AND observaciones LIKE 'Compra de Joyería%' THEN monto ELSE 0 END) as salidas_compras,
+                SUM(CASE WHEN tipo = 'SALIDA' AND observaciones NOT LIKE 'Compra de Joyería%' THEN monto ELSE 0 END) as salidas_otros
+            ")->first();
 
-        // Préstamos Nuevos (SALIDAS)
-        $prestamosNuevos = DB::table('boletas')
+        // --- 3. MOVIMIENTOS DEL PERIODO (SALIDAS) ---
+        $salidas_pagos = DB::table('boletas')
             ->whereBetween('fecha_boleta', [$f1, $f2])
             ->whereNotIn('estatus', ['ANULADO', 'CA'])
+            ->whereIn('tipo_prestamo', ['pagos', 'auto'])
             ->sum('prestamo');
+
+        $salidas_trad = DB::table('boletas')
+            ->whereBetween('fecha_boleta', [$f1, $f2])
+            ->whereNotIn('estatus', ['ANULADO', 'CA'])
+            ->where('tipo_prestamo', 'tradicional')
+            ->sum('prestamo');
+
+        // CALCULO TOTALES
+        $total_pagos_entradas = ($pagos_entradas->pagos ?? 0) + ($pagos_entradas->recargos ?? 0) - $pagos_nc;
+        $total_trad_entradas = ($trad_refrendos->comision ?? 0) + ($trad_refrendos->recargos ?? 0) +
+                               ($trad_liquidaciones->capital ?? 0) + ($trad_liquidaciones->comision ?? 0) + ($trad_liquidaciones->recargos ?? 0) - $trad_nc;
+
+        $total_entradas = $total_pagos_entradas + $total_trad_entradas + $ventas_elec + $ventas_oro + ($otrosMov->entradas_otros ?? 0);
+        $total_salidas = $salidas_pagos + $salidas_trad + ($otrosMov->salidas_otros ?? 0) + ($otrosMov->salidas_compras ?? 0);
 
         return response()->json([
             'config' => [
                 'caja' => 'CAJA ' . $cajaId,
                 'fecha_rango' => 'DEL ' . date('d-M-Y', strtotime($f1)) . ' AL ' . date('d-M-Y', strtotime($f2)),
                 'saldo_inicial' => $saldoInicial,
-                'fondo_fijo' => $otrosMov->entradas_fondo ?? 0
+                'fondo_fijo' => $otrosMov->entradas_fondo ?? 0,
+                'saldo_final' => $saldoInicial + $total_entradas - $total_salidas,
+                'fecha_impresion' => date('d-M-Y'),
+                'hora_impresion' => date('h:i:s a')
             ],
             'entradas' => [
-                'pagos_capital' => $cobranza->capital ?? 0,
-                'pagos_interes' => $cobranza->interes ?? 0,
-                'pagos_recargos' => $cobranza->recargos ?? 0,
-                'otros' => $otrosMov->entradas_otros ?? 0,
+                'pagos' => [
+                    'pagos' => $pagos_entradas->pagos ?? 0,
+                    'recargos' => $pagos_entradas->recargos ?? 0,
+                    'comision_restructura' => 0,
+                    'comision_cambio_plan' => 0,
+                    'comision_cambio_trad' => 0,
+                    'notas_credito' => $pagos_nc,
+                    'total' => $total_pagos_entradas
+                ],
+                'tradicional' => [
+                    'refrendos' => [
+                        'comision' => $trad_refrendos->comision ?? 0,
+                        'recargos' => $trad_refrendos->recargos ?? 0,
+                        'total' => ($trad_refrendos->comision ?? 0) + ($trad_refrendos->recargos ?? 0)
+                    ],
+                    'liquidaciones' => [
+                        'capital' => $trad_liquidaciones->capital ?? 0,
+                        'comision' => $trad_liquidaciones->comision ?? 0,
+                        'recargos' => $trad_liquidaciones->recargos ?? 0,
+                        'total' => ($trad_liquidaciones->capital ?? 0) + ($trad_liquidaciones->comision ?? 0) + ($trad_liquidaciones->recargos ?? 0)
+                    ],
+                    'notas_credito' => $trad_nc,
+                    'total' => $total_trad_entradas
+                ],
+                'ventas' => [
+                    'electronicos' => [
+                        'ventas' => $ventas_elec,
+                        'separado' => 0,
+                        'liq_separado' => 0,
+                        'total' => $ventas_elec
+                    ],
+                    'oro' => [
+                        'ventas' => $ventas_oro,
+                        'separado' => 0,
+                        'liq_separado' => 0,
+                        'total' => $ventas_oro
+                    ]
+                ],
+                'otros' => [
+                    'pagos_servicios' => [
+                        'importe' => 0,
+                        'comision' => 0,
+                        'total' => 0
+                    ],
+                    'venta_dolares' => 0,
+                    'aportaciones_cajas' => 0,
+                    'notas_extravio' => 0,
+                    'entradas_caja' => $otrosMov->entradas_otros ?? 0,
+                    'abonitos' => 0
+                ],
+                'total_general' => $total_entradas
             ],
             'salidas' => [
-                'prestamos' => $prestamosNuevos ?? 0,
-                'compras_oro' => $otrosMov->salidas_compras ?? 0,
-                'otros' => $otrosMov->salidas_otros ?? 0,
+                'pagos' => [
+                    'prestamos_nuevos' => $salidas_pagos,
+                    'canc_capital_cambio_plan' => 0,
+                    'canc_capital_cambio_trad' => 0,
+                    'total' => $salidas_pagos
+                ],
+                'tradicional' => [
+                    'prestamos_nuevos' => $salidas_trad,
+                    'total' => $salidas_trad
+                ],
+                'otros' => [
+                    'compra_dolares' => 0,
+                    'retiros_cajas' => 0,
+                    'gastos_generales' => 0,
+                    'salidas_caja' => $otrosMov->salidas_otros ?? 0,
+                    'compra_oro_plata' => $otrosMov->salidas_compras ?? 0,
+                    'depositos_vouchers' => 0
+                ],
+                'total_general' => $total_salidas
+            ],
+            'dolares' => [
+                'fondo_fijo' => 0,
+                'saldo_inicial' => 0,
+                'aportaciones' => 0,
+                'retiros' => 0,
+                'compras' => 0,
+                'ventas' => 0,
+                'total' => 0,
+                'saldo_final' => 0,
+                'menos_fondo' => 0,
+                'tipo_cambio_compra' => 0,
+                'tipo_cambio_venta' => 0,
+                'utilidad' => 0
             ]
         ]);
     }
@@ -115,8 +256,8 @@ class ReporteFlujoCajaController extends Controller
         $pdf = Pdf::loadView('reportes.flujocaja.pdf', [
             'reporte' => $data,
             'sucursal' => 'PRESTAMO EXPRESS',
-            'empresa' => $sucu->nombre_sucursal
+            'empresa' => $sucu->nombre_sucursal ?? 'MATRIZ'
         ])->setPaper('letter', 'portrait');
-        return $pdf->stream("Flujo_Caja_{$request->fecha_inicio}.pdf");
+        return $pdf->stream("Flujo_Caja_" . date('Y-m-d') . ".pdf");
     }
 }

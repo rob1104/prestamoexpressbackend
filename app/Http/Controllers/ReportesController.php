@@ -553,6 +553,135 @@ class ReportesController extends Controller
         $url = URL::temporarySignedRoute('reportes.compras.excel', now()->addMinutes(30), $request->all());
         return response()->json(['url' => $url]);
     }
+
+    private function getDatosPagosAlmacenaje(Request $request)
+    {
+        $fechaInicial = $request->input('fecha_inicial', now()->toDateString()) . ' 00:00:00';
+        $fechaFinal = $request->input('fecha_final', now()->toDateString()) . ' 23:59:59';
+
+        $pagosQuery = \App\Models\Pago::with(['boleta.cliente', 'boleta.categoria'])
+            ->whereBetween('fecha', [$fechaInicial, $fechaFinal])
+            ->whereIn('tipo_movimiento', [1, 'R', 3, 4, 'P', 5])
+            ->orderBy('fecha', 'asc')
+            ->get();
+
+        $movimientos = collect();
+
+        foreach ($pagosQuery as $pago) {
+            $boleta = $pago->boleta;
+            if (!$boleta) continue;
+
+            $cliente = $boleta->cliente;
+            $nombreCliente = $cliente ? trim($cliente->nombre . ' ' . $cliente->apellido_paterno . ' ' . $cliente->apellido_materno) : 'PÚBLICO GENERAL';
+            
+            $prefijo = $boleta->tipo_prestamo === 'pagos_fijos' ? 'PF' : 'TR';
+            $folioStr = "{$prefijo} {$boleta->id} {$pago->no_pago}";
+            $categoria = $boleta->categoria ? strtoupper($boleta->categoria->nombre_categoria) : 'ORO';
+
+            $interes_cobrado = (float)$pago->interestotal;
+            
+            $almacenaje = 0;
+            $iva = 0;
+            $admin = 0;
+            $interes = 0;
+            $capital = 0;
+
+            if ($boleta->tipo_prestamo === 'tradicional') {
+                if ($pago->tipo_movimiento == 2 || strtoupper(substr($pago->tipo_movimiento, 0, 1)) === 'D') {
+                    $capital = (float)$pago->prestamo;
+                }
+                
+                $trad = $boleta->tradicional->first();
+                if ($trad) {
+                    $almacenaje_mes = (float)$trad->almacenaje;
+                    $iva_mes = (float)$trad->iva_interes;
+                    $admin_mes = (float)$trad->administracion;
+                    $comision_total = (float)$boleta->comision;
+
+                    if ($comision_total > 0) {
+                        $pct_almacenaje = $almacenaje_mes / $comision_total;
+                        $pct_iva = $iva_mes / $comision_total;
+                        $pct_admin = $admin_mes / $comision_total;
+
+                        $almacenaje = round($interes_cobrado * $pct_almacenaje, 2);
+                        $iva = round($interes_cobrado * $pct_iva, 2);
+                        $admin = round($interes_cobrado * $pct_admin, 2);
+                        $interes = round($interes_cobrado - $almacenaje - $iva - $admin, 2);
+                    }
+                }
+            } else {
+                $boletaPago = \App\Models\BoletaPago::where('boleta_id', $boleta->id)->where('num_pago', $pago->no_pago)->first();
+                if ($boletaPago) {
+                    $capital = (float)$boletaPago->importe;
+                    $interes_cobrado = (float)$boletaPago->comision;
+                } else {
+                    $capital = (float)$pago->prestamo; 
+                }
+
+                $subtotalSinIva = $interes_cobrado / 1.16;
+                $iva = round($interes_cobrado - $subtotalSinIva, 2);
+                $almacenaje = round($subtotalSinIva * 0.739027, 2);
+                $interes = round($subtotalSinIva * 0.260973, 2);
+                
+                $diferencia = round($subtotalSinIva - ($almacenaje + $interes), 2);
+                $almacenaje += $diferencia;
+            }
+
+            $total = (float)$pago->totalPagado;
+
+            if ($boleta->estatus === 'CA' || $pago->estatus === 'C') {
+                $capital = 0;
+                $almacenaje = 0;
+                $iva = 0;
+                $admin = 0;
+                $interes = 0;
+                $interes_cobrado = 0;
+                $total = 0;
+            }
+
+            // Excluir cancelados o mantenerlos en 0, de momento los incluimos pero con 0 como pidi el usuario.
+            
+            $movimientos->push([
+                'fecha_pago' => Carbon::parse($pago->fecha)->toDateString(),
+                'folio_str' => $folioStr,
+                'cliente' => $nombreCliente,
+                'categoria' => $categoria,
+                'capital' => $capital,
+                'almacenaje' => $almacenaje,
+                'interes' => $interes,
+                'iva' => $iva,
+                'pago' => $total,
+            ]);
+        }
+
+        return $movimientos;
+    }
+
+    public function pagosAlmacenaje(Request $request)
+    {
+        $data = $this->getDatosPagosAlmacenaje($request);
+        return response()->json($data);
+    }
+
+    public function exportarPagosAlmacenajePdf(Request $request)
+    {
+        $movimientos = $this->getDatosPagosAlmacenaje($request);
+
+        $data = [
+            'movimientos' => $movimientos->groupBy('fecha_pago'),
+            'fecha_inicial' => $request->input('fecha_inicial', now()->toDateString()),
+            'fecha_final' => $request->input('fecha_final', now()->toDateString()),
+        ];
+
+        $pdf = Pdf::loadView('reportes.pagos-almacenaje', $data)->setPaper('letter', 'portrait');
+        return $pdf->stream('Reporte_Pagos_Almacenaje.pdf');
+    }
+
+    public function pagosAlmacenajeUrlFirmadaPdf(Request $request)
+    {
+        $url = URL::temporarySignedRoute('reportes.pagos_almacenaje.pdf', now()->addMinutes(30), $request->all());
+        return response()->json(['url' => $url]);
+    }
 }
 
 

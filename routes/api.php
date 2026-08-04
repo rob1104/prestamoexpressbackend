@@ -23,6 +23,7 @@ use App\Http\Controllers\VentaJoyeriaController;
 use App\Http\Controllers\DatabaseAdminController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\FlujoConceptoController;
+use App\Http\Controllers\AdjudicacionController;
 use App\Http\Controllers\ArqueoCajaController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
@@ -46,6 +47,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-log');
     Route::apiResource('roles', RoleController::class);
     Route::get('/permissions', [RoleController::class, 'getAllPermissions'])->name('permissions.all');
+    // Adjudicaciones
+    Route::prefix('adjudicaciones')->group(function () {
+        Route::get('/', [AdjudicacionController::class, 'index']);
+        Route::get('/buscar/{folio}', [AdjudicacionController::class, 'buscarBoleta']);
+        Route::post('/manual', [AdjudicacionController::class, 'adjudicarManual']);
+        Route::post('/revertir/{id}', [AdjudicacionController::class, 'revertirAdjudicacion']);
+    });
+
     Route::prefix('/users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('users.index');
         Route::post('/', [UserController::class, 'store'])->name('users.store');
@@ -149,6 +158,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/reportes/compras-detallado/url-firmada-pdf', [ReportesController::class, 'comprasUrlFirmadaPdf']);
     Route::get('/reportes/compras-detallado/url-firmada-excel', [ReportesController::class, 'comprasUrlFirmadaExcel']);
 
+    Route::get('/reportes/pagos-almacenaje', [ReportesController::class, 'pagosAlmacenaje']);
+    Route::get('/reportes/pagos-almacenaje/url-firmada-pdf', [ReportesController::class, 'pagosAlmacenajeUrlFirmadaPdf']);
+
     Route::get('/dashboard/resumen', [DashboardController::class, 'resumenDiario']);
 
     Route::prefix('/database')->group(function () {
@@ -177,5 +189,6 @@ Route::get('/exportar/compras/pdf', [ReportesController::class, 'exportarCompras
 Route::get('/exportar/compras/excel', [ReportesController::class, 'exportarComprasExcel'])->name('reportes.compras.excel')->middleware('signed');
 Route::get('/exportar/cierre-diario/pdf', [ReportesController::class, 'exportarCierreDiarioPdf'])->name('reportes.cierre-diario.pdf')->middleware('signed');
 Route::get('/exportar/detalles-movimientos/pdf', [App\Http\Controllers\ReporteDetallesMovimientosController::class, 'generarPDF'])->name('reportes.detalles-movimientos.pdf')->middleware('signed');
+Route::get('/exportar/pagos-almacenaje/pdf', [ReportesController::class, 'exportarPagosAlmacenajePdf'])->name('reportes.pagos_almacenaje.pdf')->middleware('signed');
 
 Route::get('/historial-cliente/boleta/{folio}/pdf', [App\Http\Controllers\HistorialClienteController::class, 'reportePdf'])->name('historial.pdf')->middleware('signed');

@@ -129,8 +129,6 @@ class BoletaMovimientoPagoController extends Controller
             $recargos = $this->calcularRecargosMora($diasAtraso, $boleta->prestamo);
         }
 
-        $bonificacion = $this->calcularBonificacion($boleta, $hoy);
-
         // 4. Retornamos la respuesta incluyendo el 'calendario'
         return response()->json([
             'boleta' => $boleta,
@@ -138,10 +136,10 @@ class BoletaMovimientoPagoController extends Controller
             'calculos' => [
                 'interes' => round($interesAcumulado, 2),
                 'recargos' => round($recargos, 2),
-                'bonificacion' => round($bonificacion, 2),
+                'bonificacion' => 0,
                 // El total inicial se calcula sobre la boleta,
                 // pero el componente de Quasar lo actualizará al seleccionar pagos
-                'total' => round(($boleta->prestamo + $interesAcumulado + $recargos) - $bonificacion, 2)
+                'total' => round(($boleta->prestamo + $interesAcumulado + $recargos), 2)
             ]
         ]);
     }
@@ -164,26 +162,4 @@ class BoletaMovimientoPagoController extends Controller
         return round($montoRecargo, 2);
     }
 
-    /**
-     * Calcula bonificación por pronto pago.
-     */
-    private function calcularBonificacion($boleta, $hoy)
-    {
-        $vencimiento = Carbon::parse($boleta->fecha_vencimiento);
-        if ($hoy->gt($vencimiento)) return 0;
-
-        $fechaCreacion = Carbon::parse($boleta->created_at);
-        $diasTranscurridos = $fechaCreacion->diffInDays($hoy);
-
-        $interesBase = (float) $boleta->comision;
-        $bonificacion = 0;
-
-        if ($diasTranscurridos >= 0 && $diasTranscurridos <= 15) {
-            $bonificacion = $interesBase * 0.50;
-        } elseif ($diasTranscurridos >= 16 && $diasTranscurridos <= 21) {
-            $bonificacion = $interesBase * 0.25;
-        }
-
-        return round($bonificacion, 2);
-    }
 }

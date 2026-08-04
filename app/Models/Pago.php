@@ -30,4 +30,9 @@ class Pago extends Model
     {
         return $this->belongsTo(Boleta::class, 'boleta_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

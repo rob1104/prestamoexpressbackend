@@ -267,7 +267,7 @@
                     </td>
                     <td class="normalTd" style="border-width: 1px;">${{number_format($boleta->prestamo, 2, '.', ',')}}</td>
                     <td class="normalTd" style="border-width: 1px;">${{number_format($boleta->prestamo, 2, '.', ',')}}</td>
-                    <td class="normalTd" style="width: 100px !important">100%</td>
+                    <td class="normalTd" style="width: 100px !important">100</td>
                 </tr>
             </table>
         </td>
