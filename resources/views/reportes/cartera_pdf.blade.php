@@ -93,5 +93,65 @@
 <div class="text-right fw-bold" style="font-size: 16px; margin-top: 30px;">
     TOTAL CARTERA: $ {{ number_format($data['totales']['total_general'], 2) }}
 </div>
+
+<div class="page-break"></div>
+
+<div class="text-center fw-bold" style="margin: 20px 0; border: 2px solid #000; padding: 5px;">RESUMEN DE CAPITAL</div>
+<p class="fw-bold">FECHA DE CARTERA: {{ $data['fecha_reporte'] }}</p>
+
+<table style="width: 70%; margin: 0 auto;">
+    <tr>
+        <td class="fw-bold" style="font-size: 16px;">CAPITAL :</td>
+        <td class="text-right fw-bold" style="font-size: 16px;">$ {{ number_format($data['resumen_capital']['capital'], 2) }}</td>
+    </tr>
+    <tr><td colspan="2" style="border:none; height: 10px;"></td></tr>
+    
+    <tr>
+        <td>+ GASTOS CARTERA PENDIENTE :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['gastos_cartera_pendiente'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>+ GASTOS PENDIENTES DE PAGO :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['gastos_pendientes_pago'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>+ SALDO EN CAJA :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['saldo_en_caja'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>+ CONTRATOS VIGENTES :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['contratos_vigentes'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>+ COMPRAS MENORES DE 100 :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['compras_menores_100'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>- ENTRADAS POR PRÉSTAMO :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['entradas_prestamo'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>- RECARGOS :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['recargos'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>- ALMACENAJE :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['almacenaje'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>- VENTA DE APARATOS :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['venta_aparatos'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>- ABONITOS :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['abonitos'], 2) }}</td>
+    </tr>
+    <tr><td colspan="2" style="border:none; height: 10px;"></td></tr>
+    <tr>
+        <td class="fw-bold" style="text-align: right; font-size: 14px;">DIFERENCIA :</td>
+        <td class="text-right fw-bold" style="font-size: 14px;">$ {{ number_format($data['resumen_capital']['diferencia'], 2) }}</td>
+    </tr>
+</table>
+
 </body>
 </html>

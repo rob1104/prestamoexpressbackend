@@ -66,6 +66,45 @@ class ReporteCarteraController extends Controller
         $det_pagos = $obtenerDetalle('PA');
         $det_trad = $obtenerDetalle('TR');
 
+        // --- BLOQUE 4: RESUMEN DE CAPITAL (NUEVO) ---
+        $capitalTrabajo = DB::table('sucursal_configs')->value('capital_trabajo') ?? 0;
+
+        // Saldo en caja (Todo el historial de efectivo)
+        $totalEntradasCaja = DB::table('movimientos_cajas')->where('tipo', 'ENTRADA')->sum('monto');
+        $totalSalidasCaja = DB::table('movimientos_cajas')->where('tipo', 'SALIDA')->sum('monto');
+        $saldoEnCaja = $totalEntradasCaja - $totalSalidasCaja;
+
+        // Gastos (Histórico de salidas en caja que no son préstamos o compras)
+        // Por simplicidad, tomaremos cualquier SALIDA manual registrada en flujo_conceptos como gasto/compra
+        $gastosPendientes = DB::table('movimientos_cajas')
+            ->where('tipo', 'SALIDA')
+            ->whereNotNull('flujo_concepto_id')
+            ->sum('monto');
+            
+        // Contratos vigentes: Suma de todos los préstamos activos (no cancelados, no liquidados, no enajenados)
+        $contratosVigentes = DB::table('boletas')->where('estatus', 'PE')->sum('prestamo');
+
+        // Entradas por préstamo (Pagos a capital histórico)
+        $entradasPrestamo = DB::table('pagos')->where('estatus', 'A')->sum('capital');
+
+        // Recargos históricos
+        $recargos = DB::table('pagos')->where('estatus', 'A')->sum('recargosNormal');
+
+        // Almacenaje (En pagos se llama interestotal)
+        $almacenaje = DB::table('pagos')->where('estatus', 'A')->sum('interestotal');
+
+        // Venta de aparatos y Abonitos (Ventas totales)
+        $ventasAparatos = DB::table('ventas_electronicos_pagos')->where('estatus', 'A')->sum('importe');
+        $ventasAbonitos = DB::table('ventas_joyeria_pagos')->where('estatus', 'A')->sum('importe');
+
+        // Fórmula: (Activos) - (Pasivos/Ingresos) - Capital Inicial = Diferencia
+        // Activos = Gastos + Saldo en Caja + Contratos Vigentes
+        // Pasivos = Entradas Préstamo + Recargos + Almacenaje + Ventas
+        $sumaActivos = $gastosPendientes + $saldoEnCaja + $contratosVigentes;
+        $sumaPasivos = $entradasPrestamo + $recargos + $almacenaje + $ventasAparatos + $ventasAbonitos;
+        
+        $diferenciaCapital = $sumaActivos - $sumaPasivos - $capitalTrabajo;
+
         // --- CÁLCULO DE TOTALES FINALES ---
         $cap_final = ($vig_total->monto ?? 0) + ($ven_total->monto ?? 0) + ($adj_total->monto ?? 0);
         // Suma de comisiones de lo pendiente
@@ -106,6 +145,20 @@ class ReporteCarteraController extends Controller
                     'vigente' => $det_trad['vigente'],
                     'adjudicado' => $det_trad['adjudicado']
                 ]
+            ],
+            'resumen_capital' => [
+                'capital' => $capitalTrabajo,
+                'gastos_cartera_pendiente' => 0,
+                'gastos_pendientes_pago' => $gastosPendientes,
+                'saldo_en_caja' => $saldoEnCaja,
+                'contratos_vigentes' => $contratosVigentes,
+                'compras_menores_100' => 0,
+                'entradas_prestamo' => $entradasPrestamo,
+                'recargos' => $recargos,
+                'almacenaje' => $almacenaje,
+                'venta_aparatos' => $ventasAparatos,
+                'abonitos' => $ventasAbonitos,
+                'diferencia' => $diferenciaCapital
             ],
             'totales' => [
                 'total_general' => $cap_final + $com_final

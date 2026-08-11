@@ -167,10 +167,8 @@ class FlujoCajaController extends Controller
     }
     public function inventarioCaja(Request $request)
     {
-        $hoy = \Carbon\Carbon::today();
-
-        // Obtener movimientos de hoy
-        $movimientos = MovimientosCaja::whereDate('created_at', $hoy)->get();
+        // Obtener TODOS los movimientos histricos para calcular el efectivo continuo
+        $movimientos = MovimientosCaja::all();
 
         $inventario = [
             'billetes' => [
