@@ -84,24 +84,40 @@ class ReporteCarteraController extends Controller
         // Contratos vigentes: Suma de todos los préstamos activos (no cancelados, no liquidados, no enajenados)
         $contratosVigentes = DB::table('boletas')->where('estatus', 'PE')->sum('prestamo');
 
+        // Compras de Joyería
+        $comprasJoyeria = DB::table('movimientos_cajas')
+            ->where('tipo', 'SALIDA')
+            ->where('observaciones', 'LIKE', '%Compra de Joyería%')
+            ->sum('monto');
+
         // Entradas por préstamo (Pagos a capital histórico)
         $entradasPrestamo = DB::table('pagos')->where('estatus', 'A')->sum('capital');
 
-        // Recargos históricos
+        // Recargos y Almacenaje históricos
         $recargos = DB::table('pagos')->where('estatus', 'A')->sum('recargosNormal');
+        $almacenaje = DB::table('pagos')->where('estatus', 'A')->sum(DB::raw('interestotal + ivaIC'));
 
-        // Almacenaje (En pagos se llama interestotal)
-        $almacenaje = DB::table('pagos')->where('estatus', 'A')->sum('interestotal');
-
-        // Venta de aparatos y Abonitos (Ventas totales)
+        // Ventas totales
         $ventasAparatos = DB::table('ventas_electronicos_pagos')->where('estatus', 'A')->sum('importe');
-        $ventasAbonitos = DB::table('ventas_joyeria_pagos')->where('estatus', 'A')->sum('importe');
+        $ventasOro = DB::table('ventas_joyeria_pagos')->where('estatus', 'A')->sum('importe');
+
+        // Otras entradas (Flujo manual que no es apertura de capital)
+        $otrasEntradas = DB::table('movimientos_cajas')
+            ->where('tipo', 'ENTRADA')
+            ->whereNotNull('flujo_concepto_id')
+            ->sum('monto');
+
+        // Abonitos (si existe alguna entrada así, por defecto 0 si no lo usan)
+        $abonitos = DB::table('movimientos_cajas')
+            ->where('tipo', 'ENTRADA')
+            ->where('observaciones', 'LIKE', '%Abonito%')
+            ->sum('monto');
 
         // Fórmula: (Activos) - (Pasivos/Ingresos) - Capital Inicial = Diferencia
-        // Activos = Gastos + Saldo en Caja + Contratos Vigentes
-        // Pasivos = Entradas Préstamo + Recargos + Almacenaje + Ventas
-        $sumaActivos = $gastosPendientes + $saldoEnCaja + $contratosVigentes;
-        $sumaPasivos = $entradasPrestamo + $recargos + $almacenaje + $ventasAparatos + $ventasAbonitos;
+        // Activos = Gastos + Saldo en Caja + Contratos Vigentes + Compras
+        // Pasivos = Entradas Préstamo + Recargos + Almacenaje + Ventas + OtrasEntradas + Abonitos
+        $sumaActivos = $gastosPendientes + $saldoEnCaja + $contratosVigentes + $comprasJoyeria;
+        $sumaPasivos = $entradasPrestamo + $recargos + $almacenaje + $ventasAparatos + $ventasOro + $otrasEntradas + $abonitos;
         
         $diferenciaCapital = $sumaActivos - $sumaPasivos - $capitalTrabajo;
 
@@ -152,12 +168,14 @@ class ReporteCarteraController extends Controller
                 'gastos_pendientes_pago' => $gastosPendientes,
                 'saldo_en_caja' => $saldoEnCaja,
                 'contratos_vigentes' => $contratosVigentes,
-                'compras_menores_100' => 0,
+                'compras_menores_100' => $comprasJoyeria,
                 'entradas_prestamo' => $entradasPrestamo,
                 'recargos' => $recargos,
                 'almacenaje' => $almacenaje,
                 'venta_aparatos' => $ventasAparatos,
-                'abonitos' => $ventasAbonitos,
+                'venta_oro' => $ventasOro,
+                'entradas_varias' => $otrasEntradas,
+                'abonitos' => $abonitos,
                 'diferencia' => $diferenciaCapital
             ],
             'totales' => [

@@ -143,6 +143,14 @@
         <td class="text-right">{{ number_format($data['resumen_capital']['venta_aparatos'], 2) }}</td>
     </tr>
     <tr>
+        <td>- VENTA DE ORO :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['venta_oro'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>- ENTRADAS VARIAS :</td>
+        <td class="text-right">{{ number_format($data['resumen_capital']['entradas_varias'], 2) }}</td>
+    </tr>
+    <tr>
         <td>- ABONITOS :</td>
         <td class="text-right">{{ number_format($data['resumen_capital']['abonitos'], 2) }}</td>
     </tr>
