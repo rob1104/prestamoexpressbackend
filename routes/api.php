@@ -161,6 +161,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/reportes/pagos-almacenaje', [ReportesController::class, 'pagosAlmacenaje']);
     Route::get('/reportes/pagos-almacenaje/url-firmada-pdf', [ReportesController::class, 'pagosAlmacenajeUrlFirmadaPdf']);
 
+    // Reporte de Gastos Pendientes
+    Route::get('/reportes/gastos-pendientes', [ReportesController::class, 'gastosPendientes']);
+    Route::get('/reportes/gastos-pendientes/url-firmada-pdf', [ReportesController::class, 'gastosPendientesUrlFirmadaPdf']);
+
     Route::get('/dashboard/resumen', [DashboardController::class, 'resumenDiario']);
 
     Route::prefix('/database')->group(function () {
@@ -190,5 +194,6 @@ Route::get('/exportar/compras/excel', [ReportesController::class, 'exportarCompr
 Route::get('/exportar/cierre-diario/pdf', [ReportesController::class, 'exportarCierreDiarioPdf'])->name('reportes.cierre-diario.pdf')->middleware('signed');
 Route::get('/exportar/detalles-movimientos/pdf', [App\Http\Controllers\ReporteDetallesMovimientosController::class, 'generarPDF'])->name('reportes.detalles-movimientos.pdf')->middleware('signed');
 Route::get('/exportar/pagos-almacenaje/pdf', [ReportesController::class, 'exportarPagosAlmacenajePdf'])->name('reportes.pagos_almacenaje.pdf')->middleware('signed');
+Route::get('/exportar/gastos-pendientes/pdf', [ReportesController::class, 'exportarGastosPendientesPdf'])->name('reportes.gastos-pendientes.pdf')->middleware('signed');
 
 Route::get('/historial-cliente/boleta/{folio}/pdf', [App\Http\Controllers\HistorialClienteController::class, 'reportePdf'])->name('historial.pdf')->middleware('signed');

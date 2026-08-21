@@ -682,6 +682,81 @@ class ReportesController extends Controller
         $url = URL::temporarySignedRoute('reportes.pagos_almacenaje.pdf', now()->addMinutes(30), $request->all());
         return response()->json(['url' => $url]);
     }
+
+    private function getDatosGastosPendientes(Request $request)
+    {
+        $fechaCorte = $request->input('fecha_corte', now()->toDateString()) . ' 23:59:59';
+        
+        $gastos = \App\Models\MovimientosCaja::with('conceptoFlujo')
+            ->where('tipo', 'SALIDA')
+            ->whereNotNull('flujo_concepto_id')
+            ->where('created_at', '<=', $fechaCorte)
+            ->orderBy('created_at', 'asc')
+            ->get();
+            
+        $agrupados = $gastos->groupBy(function($item) {
+            return $item->conceptoFlujo ? strtoupper($item->conceptoFlujo->nombre) : 'OTROS GASTOS';
+        });
+        
+        $resultado = [];
+        $granTotal = 0;
+        foreach ($agrupados as $clasificacion => $movimientos) {
+            $totalClasificacion = $movimientos->sum('monto');
+            $granTotal += $totalClasificacion;
+            $resultado[] = [
+                'clasificacion' => $clasificacion,
+                'movimientos' => $movimientos->map(function($m) {
+                    return [
+                        'folio' => $m->id,
+                        'fecha' => Carbon::parse($m->created_at)->format('d-M-Y'), // e.g., 30-abr-2021
+                        'observacion' => $m->observaciones,
+                        'importe' => $m->monto,
+                    ];
+                })->values(),
+                'total_clasificacion' => $totalClasificacion
+            ];
+        }
+        
+        // Sort groups to match exact layout preferences, although alphabetical is fine
+        usort($resultado, function($a, $b) {
+            return strcmp($a['clasificacion'], $b['clasificacion']);
+        });
+
+        return [
+            'agrupaciones' => $resultado,
+            'gran_total' => $granTotal,
+            'fecha_corte' => Carbon::parse($fechaCorte)->format('d-M-Y')
+        ];
+    }
+    
+    public function gastosPendientes(Request $request)
+    {
+        return response()->json($this->getDatosGastosPendientes($request));
+    }
+    
+    public function gastosPendientesUrlFirmadaPdf(Request $request)
+    {
+        $url = URL::temporarySignedRoute(
+            'reportes.gastos-pendientes.pdf',
+            now()->addMinutes(30),
+            $request->all()
+        );
+        return response()->json(['url' => $url]);
+    }
+    
+    public function exportarGastosPendientesPdf(Request $request)
+    {
+        $datos = $this->getDatosGastosPendientes($request);
+        $pdf = Pdf::loadView('reportes.gastos-pendientes', [
+            'agrupaciones' => $datos['agrupaciones'],
+            'gran_total' => $datos['gran_total'],
+            'fecha_corte' => $datos['fecha_corte'],
+            'fechaImpresion' => now()->format('d-M-Y'),
+            'horaImpresion' => now()->format('h:i a')
+        ])->setPaper('letter', 'portrait');
+        
+        return $pdf->stream('Reporte_Gastos_Pendientes.pdf');
+    }
 }
 
 
