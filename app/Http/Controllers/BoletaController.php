@@ -169,28 +169,25 @@ class BoletaController extends Controller
                 $interesTotalCobrado = (float)$request->comision;
 
                 // --- NUEVA LÓGICA DE DISTRIBUCIÓN MATEMÁTICA ---
-                // 1. Extraemos el IVA exacto del total cobrado
-                $subtotalSinIva = $interesTotalCobrado / 1.16;
-                $mIva = round($interesTotalCobrado - $subtotalSinIva, 2);
+                $pComision = (float)($config->p_comision ?? 20.00);
 
-                // 2. Repartimos el subtotal
-                $sumaPorcentajes = $pAlmacenaje + $pAdmin + $pCustodia + $pIntDiv;
-
-                if ($sumaPorcentajes > 0) {
-                    $mAlmacenaje = round($subtotalSinIva * ($pAlmacenaje / $sumaPorcentajes), 2);
-                    $mAdmin      = round($subtotalSinIva * ($pAdmin / $sumaPorcentajes), 2);
-                    $mIntDiv     = round($subtotalSinIva * ($pIntDiv / $sumaPorcentajes), 2);
-                    $mCustodia   = round($subtotalSinIva * ($pCustodia / $sumaPorcentajes), 2);
+                if ($pComision > 0) {
+                    $mAlmacenaje = round($interesTotalCobrado * ($pAlmacenaje / $pComision), 2);
+                    $mAdmin      = round($interesTotalCobrado * ($pAdmin / $pComision), 2);
+                    $mIntDiv     = round($interesTotalCobrado * ($pIntDiv / $pComision), 2);
+                    $mCustodia   = round($interesTotalCobrado * ($pCustodia / $pComision), 2);
+                    $mIva        = round($interesTotalCobrado * ($pIva / $pComision), 2);
                 } else {
-                    $mAlmacenaje = round($subtotalSinIva * 0.7390, 2);
-                    $mIntDiv     = round($subtotalSinIva * 0.2610, 2);
-                    $mAdmin = 0; $mCustodia = 0;
+                    $mAlmacenaje = round($interesTotalCobrado * (6 / 20), 2);
+                    $mIntDiv     = round($interesTotalCobrado * (4.5 / 20), 2);
+                    $mAdmin      = round($interesTotalCobrado * (3.57 / 20), 2);
+                    $mCustodia   = round($interesTotalCobrado * (4 / 20), 2);
+                    $mIva        = round($interesTotalCobrado * (1.93 / 20), 2);
                 }
 
-                // 3. Ajuste de centavos (el Almacenaje absorbe la diferencia)
-                $sumaPartes = $mAlmacenaje + $mAdmin + $mCustodia + $mIntDiv;
-                $diferencia = round($subtotalSinIva - $sumaPartes, 2);
-
+                // Ajuste de centavos (el Almacenaje absorbe la diferencia)
+                $sumaPartes = $mAlmacenaje + $mAdmin + $mCustodia + $mIntDiv + $mIva;
+                $diferencia = round($interesTotalCobrado - $sumaPartes, 2);
                 $mAlmacenaje += $diferencia;
 
                 if ($request->tipo_prestamo === 'pagos' && $request->numero_pagos > 0) {
@@ -529,23 +526,25 @@ class BoletaController extends Controller
             $pCustodia   = (float)($config->p_custodia ?? 0);
             $pIntDiv     = (float)($config->p_interes_dividido ?? 0);
 
-            $subtotalSinIva = $nuevaComisionTotal / 1.16;
-            $mIva = round($nuevaComisionTotal - $subtotalSinIva, 2);
-            $sumaPorcentajes = $pAlmacenaje + $pAdmin + $pCustodia + $pIntDiv;
+            $pIva        = (float)($config->p_iva_interes ?? 1.93);
+            $pComision   = (float)($config->p_comision ?? 20.00);
 
-            if ($sumaPorcentajes > 0) {
-                $mAlmacenaje = round($subtotalSinIva * ($pAlmacenaje / $sumaPorcentajes), 2);
-                $mAdmin      = round($subtotalSinIva * ($pAdmin / $sumaPorcentajes), 2);
-                $mIntDiv     = round($subtotalSinIva * ($pIntDiv / $sumaPorcentajes), 2);
-                $mCustodia   = round($subtotalSinIva * ($pCustodia / $sumaPorcentajes), 2);
+            if ($pComision > 0) {
+                $mAlmacenaje = round($nuevaComisionTotal * ($pAlmacenaje / $pComision), 2);
+                $mAdmin      = round($nuevaComisionTotal * ($pAdmin / $pComision), 2);
+                $mIntDiv     = round($nuevaComisionTotal * ($pIntDiv / $pComision), 2);
+                $mCustodia   = round($nuevaComisionTotal * ($pCustodia / $pComision), 2);
+                $mIva        = round($nuevaComisionTotal * ($pIva / $pComision), 2);
             } else {
-                $mAlmacenaje = round($subtotalSinIva * 0.7390, 2);
-                $mIntDiv     = round($subtotalSinIva * 0.2610, 2);
-                $mAdmin = 0; $mCustodia = 0;
+                $mAlmacenaje = round($nuevaComisionTotal * (6 / 20), 2);
+                $mIntDiv     = round($nuevaComisionTotal * (4.5 / 20), 2);
+                $mAdmin      = round($nuevaComisionTotal * (3.57 / 20), 2);
+                $mCustodia   = round($nuevaComisionTotal * (4 / 20), 2);
+                $mIva        = round($nuevaComisionTotal * (1.93 / 20), 2);
             }
 
-            $sumaPartes = $mAlmacenaje + $mAdmin + $mCustodia + $mIntDiv;
-            $mAlmacenaje += round($subtotalSinIva - $sumaPartes, 2); // Ajuste de centavos
+            $sumaPartes = $mAlmacenaje + $mAdmin + $mCustodia + $mIntDiv + $mIva;
+            $mAlmacenaje += round($nuevaComisionTotal - $sumaPartes, 2); // Ajuste de centavos
 
             // 4. Actualizar la Boleta Maestra con los nuevos saldos
             $nuevaFechaVencimiento = $hoy->addDays(30)->format('Y-m-d'); // Extender el plazo

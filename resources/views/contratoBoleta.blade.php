@@ -44,10 +44,10 @@
     if ($boleta->periodo_id == 2) $nombrePeriodo = 'Catorcenal';
     if ($boleta->periodo_id == 3) $nombrePeriodo = 'Quincenal';
 
-    // Se ajustan los multiplicadores para que concuerden con el sistema VB6 anterior
-    // Para p_interes = 20%, CAT debe ser 292.06% y Tasa 144.94%
-    $interesAnual = $boleta->p_interes * 7.247;
-    $cat = $boleta->p_interes * 14.603;
+    // Se ajustan los multiplicadores para que concuerden con el requerimiento del cliente
+    // Para p_interes = 20%, CAT debe ser 292.07% y Tasa 144.84%
+    $interesAnual = $boleta->p_interes * 7.242;
+    $cat = $boleta->p_interes * 14.6035;
 
     // --- CÁLCULOS MATEMÁTICOS EXACTOS ---
     $interesTotalCobrado = (float)$boleta->comision;
@@ -168,7 +168,7 @@
                     <span>1</span>
                 @endif
                         </span>.
-            Su pago será:
+            Su pago será {{ strtoupper($nombrePeriodo) }}. Su pago será:
             <span style="text-decoration: underline;">
                             <span>EFECTIVO</span>
                         </span>. Métodos de pago aceptado: efectivo, tarjetas de crédito y débito, transferencias. En caso de que el vencimiento sea en
@@ -224,8 +224,8 @@
                     <td class="normalTd" style="border-width: 1px; background-color: #C0C0C0">COSTO DIARIO TOTAL</td>
                 </tr>
                 <tr>
-                    <td class="normalTd" style="border-width: 1px;">Para fines informativos y de comparación: <span>{{number_format(($boleta->p_interes * 13.92) / 12, 2, '.')}}</span>% FIJO Sin IVA</td>
-                    <td class="normalTd" style="border-width: 1px;">Para fines informativos y de comparación: <span>{{number_format(($boleta->p_interes * 13.92) / 360, 2, '.')}}</span> % FIJO Sin IVA</td>
+                    <td class="normalTd" style="border-width: 1px;">Para fines informativos y de comparación: <span>{{number_format($cat / 12, 2, '.')}}</span>% FIJO Sin IVA</td>
+                    <td class="normalTd" style="border-width: 1px;">Para fines informativos y de comparación: <span>{{number_format($cat / 360, 2, '.')}}</span> % FIJO Sin IVA</td>
                 </tr>
                 <tr>
                     <td class="normalTd" style="border-width: 1px;" colspan="2">

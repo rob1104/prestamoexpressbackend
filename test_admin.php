@@ -1,0 +1,1 @@
+<?php require __DIR__."/vendor/autoload.php"; $app = require_once __DIR__."/bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $interesTotalCobrado = 770.00; $pAdmin = 3.57; $pComision = 20.00; echo "Admin: " . round($interesTotalCobrado * ($pAdmin / $pComision), 2);

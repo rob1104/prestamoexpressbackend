@@ -85,11 +85,21 @@ class PagoController extends Controller
             $capital = $tradicionalActual->capital;
             $interesNuevo = $tradicionalActual->interes; // En un refrendo simple el interés se mantiene
 
-            $mAlmacenaje = round($capital * (($config->p_almacenaje ?? 0) / 100), 2);
-            $mAdmin      = round($capital * (($config->p_administracion ?? 0) / 100), 2);
-            $mCustodia   = round($capital * (($config->p_custodia ?? 0) / 100), 2);
-            $mIntDiv     = round($capital * (($config->p_interes_dividido ?? 0) / 100), 2);
-            $mIva        = round($capital * (($config->p_iva_interes ?? 0) / 100), 2);
+            $pComision = (float)($config->p_comision ?? 20.00);
+
+            if ($pComision > 0) {
+                $mAlmacenaje = round($interesNuevo * (($config->p_almacenaje ?? 0) / $pComision), 2);
+                $mAdmin      = round($interesNuevo * (($config->p_administracion ?? 0) / $pComision), 2);
+                $mCustodia   = round($interesNuevo * (($config->p_custodia ?? 0) / $pComision), 2);
+                $mIntDiv     = round($interesNuevo * (($config->p_interes_dividido ?? 0) / $pComision), 2);
+                $mIva        = round($interesNuevo * (($config->p_iva_interes ?? 0) / $pComision), 2);
+            } else {
+                $mAlmacenaje = round($interesNuevo * (6 / 20), 2);
+                $mAdmin      = round($interesNuevo * (3.57 / 20), 2);
+                $mCustodia   = round($interesNuevo * (4 / 20), 2);
+                $mIntDiv     = round($interesNuevo * (4.5 / 20), 2);
+                $mIva        = round($interesNuevo * (1.93 / 20), 2);
+            }
 
             // Ajuste de centavos en Almacenaje
             $diferencia = $interesNuevo - ($mAlmacenaje + $mAdmin + $mCustodia + $mIntDiv + $mIva);
