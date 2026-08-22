@@ -139,7 +139,7 @@ class ReporteFlujoCajaController extends Controller
                 'fecha_rango' => 'DEL ' . date('d-M-Y', strtotime($f1)) . ' AL ' . date('d-M-Y', strtotime($f2)),
                 'saldo_inicial' => $saldoInicial,
                 'fondo_fijo' => $otrosMov->entradas_fondo ?? 0,
-                'saldo_final' => $saldoInicial + $total_entradas - $total_salidas,
+                'saldo_final' => $saldoInicial + ($otrosMov->entradas_fondo ?? 0) + $total_entradas - $total_salidas,
                 'fecha_impresion' => date('d-M-Y'),
                 'hora_impresion' => date('h:i:s a')
             ],
