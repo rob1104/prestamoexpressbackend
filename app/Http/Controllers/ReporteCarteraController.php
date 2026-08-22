@@ -53,13 +53,13 @@ class ReporteCarteraController extends Controller
 
             return [
                 'nuevos' => DB::table('boletas')->whereIn('tipo_prestamo', $t)->whereDate('fecha_boleta', $fecha)->where('estatus', '!=', 'ANULADO')
-                    ->selectRaw('SUM(prestamo) as capital, SUM(comision / 1.16) as comision')->first(),
+                    ->selectRaw('SUM(prestamo) as capital, SUM(comision) as comision')->first(),
 
                 'vigente' => DB::table('boletas')->whereIn('tipo_prestamo', $t)->where('estatus', 'PE')->whereDate('fecha_vencimiento', '>=', $fecha)
-                    ->selectRaw('SUM(prestamo) as capital, SUM(comision / 1.16) as comision')->first(),
+                    ->selectRaw('SUM(prestamo) as capital, SUM(comision) as comision')->first(),
 
                 'adjudicado' => DB::table('boletas')->whereIn('tipo_prestamo', $t)->where('estatus', 'PE')->whereDate('fecha_vencimiento', '<', $fechaLimiteAdj)
-                    ->selectRaw('COUNT(*) as cantidad, SUM(prestamo) as capital, SUM(comision / 1.16) as comision')->first(),
+                    ->selectRaw('COUNT(*) as cantidad, SUM(prestamo) as capital, SUM(comision) as comision')->first(),
             ];
         };
 
@@ -124,7 +124,7 @@ class ReporteCarteraController extends Controller
         // --- CÁLCULO DE TOTALES FINALES ---
         $cap_final = ($vig_total->monto ?? 0) + ($ven_total->monto ?? 0) + ($adj_total->monto ?? 0);
         // Suma de comisiones de lo pendiente
-        $com_final = DB::table('boletas')->where('estatus', 'PE')->sum(DB::raw('comision / 1.16'));
+        $com_final = DB::table('boletas')->where('estatus', 'PE')->sum(DB::raw('comision'));
 
         // --- RESPUESTA ESTRUCTURADA EXACTA PARA EL FRONT ---
         return response()->json([
