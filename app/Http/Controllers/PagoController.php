@@ -19,6 +19,8 @@ class PagoController extends Controller
             $boletaId = $request->boleta_id;
             $hoy = now();
 
+            $observacionesRefrendo = 'Refrendo Préstamo Tradicional - Boleta #' . $boletaId;
+
             MovimientosCaja::create([
                 'caja_id'      => $request->caja_id ?? 1,
                 'boleta_id'    => $boletaId,
@@ -26,6 +28,7 @@ class PagoController extends Controller
                 'tipo'         => 'ENTRADA',
                 'monto'        => $request->total_pagado,
                 'denominacion' => $request->denominaciones,
+                'observaciones'=> $observacionesRefrendo,
             ]);
 
             // 1. Localizar el registro actual pendiente en boletas_tradicionales

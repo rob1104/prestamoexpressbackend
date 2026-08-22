@@ -32,6 +32,18 @@ class MovimientoCajaController extends Controller
         ]);
 
         try {
+            $boleta = \App\Models\Boleta::find($boletaId);
+            $observaciones = 'Préstamo';
+            if ($boleta) {
+                if ($boleta->tipo_prestamo === 'pagos') {
+                    $observaciones = 'Préstamo en Pagos - Boleta #' . $boletaId;
+                } else {
+                    $observaciones = 'Préstamo Tradicional - Boleta #' . $boletaId;
+                }
+            } else {
+                $observaciones = 'Préstamo - Boleta #' . $boletaId;
+            }
+
             $movimiento = MovimientosCaja::create([
                 'caja_id'      => 1, // Caja Número: 1
                 'boleta_id'    => $boletaId,
@@ -39,6 +51,7 @@ class MovimientoCajaController extends Controller
                 'tipo'         => 'SALIDA',   // Salida por préstamo
                 'monto'        => $request->total_efectivo,
                 'denominacion' => $request->desglose, // JSON de billetes y monedas
+                'observaciones'=> $observaciones
             ]);
 
             return response()->json([

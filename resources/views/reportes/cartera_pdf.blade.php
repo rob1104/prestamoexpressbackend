@@ -82,6 +82,54 @@
         <td class="text-right">{{ number_format($data['detalle']['tradicional']['nuevos']['comision'], 2) }}</td>
         <td class="text-right">{{ number_format($data['detalle']['tradicional']['nuevos']['capital'] + $data['detalle']['tradicional']['nuevos']['comision'], 2) }}</td>
     </tr>
+    <tr>
+        <td>Por Cobrar Vigente</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['vigente']['capital'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['vigente']['comision'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['vigente']['capital'] + $data['detalle']['tradicional']['vigente']['comision'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>Por Cobrar Vencido</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['vencido']['capital'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['vencido']['comision'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['vencido']['capital'] + $data['detalle']['tradicional']['vencido']['comision'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>Liquidaciones Normales</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_normales']['capital'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_normales']['comision'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_normales']['capital'] + $data['detalle']['tradicional']['liq_normales']['comision'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>Liquidaciones Abonos a Capital</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_abonos']['capital'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_abonos']['comision'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_abonos']['capital'] + $data['detalle']['tradicional']['liq_abonos']['comision'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>Liquidaciones Cámbiate a Pagos</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_cambio']['capital'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_cambio']['comision'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['liq_cambio']['capital'] + $data['detalle']['tradicional']['liq_cambio']['comision'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>Adjudicaciones</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['adj_normal']['capital'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['adj_normal']['comision'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['adj_normal']['capital'] + $data['detalle']['tradicional']['adj_normal']['comision'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>Adjudicaciones de Oro</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['adj_oro']['capital'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['adj_oro']['comision'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['adj_oro']['capital'] + $data['detalle']['tradicional']['adj_oro']['comision'], 2) }}</td>
+    </tr>
+    <tr>
+        <td>Refrendos</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['refrendos']['capital'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['refrendos']['comision'], 2) }}</td>
+        <td class="text-right">{{ number_format($data['detalle']['tradicional']['refrendos']['capital'] + $data['detalle']['tradicional']['refrendos']['comision'], 2) }}</td>
+    </tr>
     <tr class="fw-bold">
         <td>Posible Adjudicación ({{ $data['detalle']['tradicional']['adjudicado']['cantidad'] }})</td>
         <td class="text-right">{{ number_format($data['detalle']['tradicional']['adjudicado']['capital'], 2) }}</td>

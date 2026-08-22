@@ -51,15 +51,72 @@ class ReporteCarteraController extends Controller
         $obtenerDetalle = function($tipo) use ($fecha, $fechaLimiteAdj) {
             $t = ($tipo == 'PA') ? ['PA', 'pagos'] : ['TR', 'tradicional'];
 
+            $nuevos = DB::table('boletas')->whereIn('tipo_prestamo', $t)->whereDate('fecha_boleta', $fecha)->where('estatus', '!=', 'ANULADO')
+                ->selectRaw('SUM(prestamo) as capital, SUM(comision) as comision')->first();
+
+            $vigente = DB::table('boletas')->whereIn('tipo_prestamo', $t)->where('estatus', 'PE')->whereDate('fecha_vencimiento', '>=', $fecha)
+                ->selectRaw('SUM(prestamo) as capital, SUM(comision) as comision')->first();
+
+            $adjudicado = DB::table('boletas')->whereIn('tipo_prestamo', $t)->where('estatus', 'PE')->whereDate('fecha_vencimiento', '<', $fechaLimiteAdj)
+                ->selectRaw('COUNT(*) as cantidad, SUM(prestamo) as capital, SUM(comision) as comision')->first();
+
+            $vencido = DB::table('boletas')->whereIn('tipo_prestamo', $t)->where('estatus', 'PE')
+                ->whereDate('fecha_vencimiento', '<', $fecha)
+                ->whereDate('fecha_vencimiento', '>=', $fechaLimiteAdj)
+                ->selectRaw('SUM(prestamo) as capital, SUM(comision) as comision')->first();
+
+            $liq_normales = DB::table('pagos')
+                ->join('boletas', 'boletas.id', '=', 'pagos.boleta_id')
+                ->whereIn('boletas.tipo_prestamo', $t)
+                ->where('pagos.tipo_movimiento', 1) // 1 = Liquidacion
+                ->whereDate('pagos.fecha', $fecha)
+                ->where('pagos.estatus', 'A')
+                ->selectRaw('SUM(pagos.prestamo) as capital, SUM(pagos.interestotal) as comision')->first();
+
+            $liq_abonos = DB::table('pagos')
+                ->join('boletas', 'boletas.id', '=', 'pagos.boleta_id')
+                ->whereIn('boletas.tipo_prestamo', $t)
+                ->where('pagos.tipo_movimiento', 2) // 2 = Abono
+                ->whereDate('pagos.fecha', $fecha)
+                ->where('pagos.estatus', 'A')
+                // A veces 'capital' viene nulo en Abono, lo calculamos como importe - interes - recargos si es nulo
+                ->selectRaw('SUM(COALESCE(pagos.capital, pagos.importe - pagos.interestotal - pagos.recargosNormal)) as capital, SUM(pagos.interestotal) as comision')->first();
+
+            $liq_cambio = ['capital' => 0, 'comision' => 0];
+
+            $adj_normal = DB::table('adjudicaciones')
+                ->join('boletas', 'boletas.id', '=', 'adjudicaciones.boleta_id')
+                ->whereIn('boletas.tipo_prestamo', $t)
+                ->where('boletas.categoria_id', '!=', 1)
+                ->whereDate('adjudicaciones.fecha_adjudicacion', $fecha)
+                ->selectRaw('SUM(boletas.prestamo) as capital, SUM(boletas.comision) as comision')->first();
+
+            $adj_oro = DB::table('adjudicaciones')
+                ->join('boletas', 'boletas.id', '=', 'adjudicaciones.boleta_id')
+                ->whereIn('boletas.tipo_prestamo', $t)
+                ->where('boletas.categoria_id', 1)
+                ->whereDate('adjudicaciones.fecha_adjudicacion', $fecha)
+                ->selectRaw('SUM(boletas.prestamo) as capital, SUM(boletas.comision) as comision')->first();
+
+            $refrendos = DB::table('pagos')
+                ->join('boletas', 'boletas.id', '=', 'pagos.boleta_id')
+                ->whereIn('boletas.tipo_prestamo', $t)
+                ->where('pagos.tipo_movimiento', 3) // 3 = Refrendo
+                ->whereDate('pagos.fecha', $fecha)
+                ->where('pagos.estatus', 'A')
+                ->selectRaw('SUM(0) as capital, SUM(pagos.interestotal + pagos.recargosNormal) as comision')->first(); 
+
             return [
-                'nuevos' => DB::table('boletas')->whereIn('tipo_prestamo', $t)->whereDate('fecha_boleta', $fecha)->where('estatus', '!=', 'ANULADO')
-                    ->selectRaw('SUM(prestamo) as capital, SUM(comision) as comision')->first(),
-
-                'vigente' => DB::table('boletas')->whereIn('tipo_prestamo', $t)->where('estatus', 'PE')->whereDate('fecha_vencimiento', '>=', $fecha)
-                    ->selectRaw('SUM(prestamo) as capital, SUM(comision) as comision')->first(),
-
-                'adjudicado' => DB::table('boletas')->whereIn('tipo_prestamo', $t)->where('estatus', 'PE')->whereDate('fecha_vencimiento', '<', $fechaLimiteAdj)
-                    ->selectRaw('COUNT(*) as cantidad, SUM(prestamo) as capital, SUM(comision) as comision')->first(),
+                'nuevos' => $nuevos,
+                'vigente' => $vigente,
+                'vencido' => $vencido,
+                'adjudicado' => $adjudicado,
+                'liq_normales' => $liq_normales,
+                'liq_abonos' => $liq_abonos,
+                'liq_cambio' => $liq_cambio,
+                'adj_normal' => $adj_normal,
+                'adj_oro' => $adj_oro,
+                'refrendos' => $refrendos,
             ];
         };
 
@@ -154,12 +211,26 @@ class ReporteCarteraController extends Controller
                 'pagos' => [
                     'nuevos' => $det_pagos['nuevos'],
                     'vigente' => $det_pagos['vigente'],
-                    'adjudicado' => $det_pagos['adjudicado']
+                    'vencido' => $det_pagos['vencido'],
+                    'adjudicado' => $det_pagos['adjudicado'],
+                    'liq_normales' => $det_pagos['liq_normales'],
+                    'liq_abonos' => $det_pagos['liq_abonos'],
+                    'liq_cambio' => $det_pagos['liq_cambio'],
+                    'adj_normal' => $det_pagos['adj_normal'],
+                    'adj_oro' => $det_pagos['adj_oro'],
+                    'refrendos' => $det_pagos['refrendos']
                 ],
                 'tradicional' => [
                     'nuevos' => $det_trad['nuevos'],
                     'vigente' => $det_trad['vigente'],
-                    'adjudicado' => $det_trad['adjudicado']
+                    'vencido' => $det_trad['vencido'],
+                    'adjudicado' => $det_trad['adjudicado'],
+                    'liq_normales' => $det_trad['liq_normales'],
+                    'liq_abonos' => $det_trad['liq_abonos'],
+                    'liq_cambio' => $det_trad['liq_cambio'],
+                    'adj_normal' => $det_trad['adj_normal'],
+                    'adj_oro' => $det_trad['adj_oro'],
+                    'refrendos' => $det_trad['refrendos']
                 ]
             ],
             'resumen_capital' => [

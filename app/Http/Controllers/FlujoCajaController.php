@@ -54,7 +54,8 @@ class FlujoCajaController extends Controller
             'autorizado_por' => 'nullable|string',
             'adicional_1' => 'nullable|string',
             'adicional_2' => 'nullable|string',
-            'es_pago_relacionado' => 'nullable|boolean'
+            'es_pago_relacionado' => 'nullable|boolean',
+            'fecha' => 'nullable|date'
         ]);
 
         $concepto = FlujoConcepto::find($request->concepto_id);
@@ -64,7 +65,7 @@ class FlujoCajaController extends Controller
             $observacionFinal .= ' - ' . $request->observaciones;
         }
 
-        $movimiento = MovimientosCaja::create([
+        $movimiento = new MovimientosCaja([
             'caja_id' => 1, // Por ahora fijo a Caja 1 como en VB6
             'user_id' => Auth::id() ?? 1,
             'flujo_concepto_id' => $request->concepto_id,
@@ -79,6 +80,12 @@ class FlujoCajaController extends Controller
             'adicional_2' => $request->adicional_2,
             'es_pago_relacionado' => $request->es_pago_relacionado ?? false
         ]);
+
+        if ($request->filled('fecha')) {
+            $movimiento->created_at = $request->fecha . ' ' . now()->format('H:i:s');
+        }
+
+        $movimiento->save();
 
         return response()->json([
             'status' => 'success',
@@ -99,7 +106,8 @@ class FlujoCajaController extends Controller
             'autorizado_por' => 'nullable|string',
             'adicional_1' => 'nullable|string',
             'adicional_2' => 'nullable|string',
-            'es_pago_relacionado' => 'nullable|boolean'
+            'es_pago_relacionado' => 'nullable|boolean',
+            'fecha' => 'nullable|date'
         ]);
 
         $concepto = FlujoConcepto::find($request->concepto_id);
@@ -109,7 +117,7 @@ class FlujoCajaController extends Controller
             $observacionFinal .= ' - ' . $request->observaciones;
         }
 
-        $movimiento = MovimientosCaja::create([
+        $movimiento = new MovimientosCaja([
             'caja_id' => 1, // Por ahora fijo a Caja 1 como en VB6
             'user_id' => Auth::id() ?? 1,
             'flujo_concepto_id' => $request->concepto_id,
@@ -124,6 +132,12 @@ class FlujoCajaController extends Controller
             'adicional_2' => $request->adicional_2,
             'es_pago_relacionado' => $request->es_pago_relacionado ?? false
         ]);
+
+        if ($request->filled('fecha')) {
+            $movimiento->created_at = $request->fecha . ' ' . now()->format('H:i:s');
+        }
+
+        $movimiento->save();
 
         return response()->json([
             'status' => 'success',

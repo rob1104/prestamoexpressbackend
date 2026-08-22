@@ -375,6 +375,8 @@ class BoletaController extends Controller
             $bonificacionNC = $request->input('bonificacion', 0);
             $hoy = now();
 
+            $observacionesLiq = ($boleta->tipo_prestamo === 'pagos' ? 'Liquidación Préstamo en Pagos' : 'Liquidación Préstamo Tradicional') . ' - Boleta #' . $boleta->id;
+
             MovimientosCaja::create([
                 'caja_id'      => $request->caja_id ?? 1,
                 'boleta_id'    => $boleta->id,
@@ -382,6 +384,7 @@ class BoletaController extends Controller
                 'tipo'         => 'ENTRADA',
                 'monto'        => $request->total_pagado,
                 'denominacion' => $request->denominaciones,
+                'observaciones'=> $observacionesLiq,
             ]);
 
             // 2. Insertar el Pago de Liquidación (Desempeño)
@@ -482,6 +485,8 @@ class BoletaController extends Controller
 
             $hoy = now();
 
+            $observacionesAbono = ($boleta->tipo_prestamo === 'pagos' ? 'Abono Préstamo en Pagos' : 'Abono Préstamo Tradicional') . ' - Boleta #' . $boleta->id;
+
             // 1. Registro en Caja de la entrada de dinero
             MovimientosCaja::create([
                 'caja_id'      => $request->caja_id ?? 1,
@@ -490,6 +495,7 @@ class BoletaController extends Controller
                 'tipo'         => 'ENTRADA',
                 'monto'        => $request->total_pagado,
                 'denominacion' => $request->denominaciones,
+                'observaciones'=> $observacionesAbono,
             ]);
 
             // 2. Insertar el Pago (Historial)
